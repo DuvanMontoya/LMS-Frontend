@@ -179,7 +179,7 @@
 </script>
 
 <svelte:head>
-  <title>Dashboard de Aprendizaje Elite</title>
+  <title>Dashboard de Aprendizaje</title>
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -207,7 +207,7 @@
   {:else}
     <header class="dashboard-header">
       <div class="user-greeting">
-        <h1>Bienvenido, {usuario.nombre} {usuario.apellido}</h1>
+        <h1>{usuario.nombre} {usuario.apellido}</h1>
         <p>{usuario.profesion}</p>
       </div>
       <div class="quick-stats">

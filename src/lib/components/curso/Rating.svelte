@@ -1,60 +1,50 @@
+<!-- src/lib/components/curso/Rating.svelte -->
 <script>
-    import { createEventDispatcher } from 'svelte';
-  
-    export let rating = 0;
-    export let maxRating = 5;
-    export let size = 24;
-    export let color = '#ffd700';
-    export let backgroundColor = '#e0e0e0';
-  
-    const dispatch = createEventDispatcher();
-  
-    function handleRating(value) {
-      rating = value;
-      dispatch('rating', { rating: value });
-    }
-  </script>
-  
-  <div class="rating">
-    {#each Array(maxRating) as _, i}
-      <span
-        class="star"
-        on:click={() => handleRating(i + 1)}
-        on:keydown={(e) => e.key === 'Enter' && handleRating(i + 1)}
-        role="button"
-        tabindex="0"
-        aria-label={`Rate ${i + 1} out of ${maxRating}`}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-          fill={i < rating ? color : backgroundColor}
-          stroke={color}
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      </span>
-    {/each}
-  </div>
-  
-  <style>
-    .rating {
-      display: flex;
-      align-items: center;
-    }
-  
-    .star {
-      cursor: pointer;
-      display: inline-block;
-      transition: transform 0.1s ease-in-out;
-    }
-  
-    .star:hover {
-      transform: scale(1.1);
-    }
-  </style>
+  import { createEventDispatcher } from "svelte";
+  export let rating = 0;
+  const dispatch = createEventDispatcher();
+
+  function setRating(value) {
+    rating = value;
+    dispatch('input', rating);
+  }
+</script>
+
+<div class="rating">
+  {#each Array(5) as _, i}
+    <i 
+      class="fas fa-star" 
+      class:filled={i < rating}
+      on:click={() => setRating(i + 1)}
+      on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') setRating(i + 1) }}
+      tabindex="0"
+      role="button"
+      aria-label={`Calificar con ${i + 1} estrellas`}
+    ></i>
+  {/each}
+</div>
+
+<style>
+  .rating {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 2rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .fas.fa-star {
+    cursor: pointer;
+    color: #e0e0e0;
+    transition: color 0.2s ease;
+  }
+
+  .fas.fa-star.filled {
+    color: #f1c40f;
+  }
+
+  .fas.fa-star:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+  }
+</style>

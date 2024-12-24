@@ -1,4 +1,4 @@
-// const API_URL = 'https://backend.laila.icu/api/';
+// lib/api/utils/utils.js
 const API_URL = "http://localhost:8000/api/";
 
 

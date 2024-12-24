@@ -1,11 +1,6 @@
-// const API_URL = "https://backend.laila.icu/api/";
-
-// const API_BASE_URL = "https://backend.laila.icu/api/";
-
+// evaluaciones.js
 const API_URL = "http://localhost:8000/api/";
-
 const API_BASE_URL = "http://localhost:8000/api/";
-
 
 /**
  * Fetch data from the API
@@ -142,10 +137,27 @@ export async function getEvaluaciones(authToken) {
  * @returns {Promise<object>} - Data of the started evaluation
  */
 export async function iniciarEvaluacion(evaluacionId, authToken) {
-  return fetchFromAPI(`evaluaciones/${evaluacionId}/iniciar/`, authToken, {
-    method: "POST",
-  });
+  try {
+    const response = await fetch(`${API_URL}evaluaciones/${evaluacionId}/iniciar/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al iniciar nuevo intento");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error al iniciar nuevo intento:", error);
+    throw error;
+  }
 }
+
 
 export async function enviarEvaluacion(
   evaluacionId,
@@ -160,7 +172,7 @@ export async function enviarEvaluacion(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: authToken,
+        Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
       },
       body: JSON.stringify({ respuestas }),
     });
@@ -207,6 +219,7 @@ export async function obtenerIntento(evaluacionId, token) {
           "Sesión expirada o inválida. Por favor, inicia sesión nuevamente."
         );
       }
+      const errorData = await response.json();
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -229,7 +242,7 @@ export async function guardarProgreso(
       {
         method: "POST",
         headers: {
-          Authorization: authToken,
+          Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -243,7 +256,8 @@ export async function guardarProgreso(
       if (response.status === 401) {
         throw new Error("Sesión expirada. Por favor, vuelve a iniciar sesión.");
       }
-      throw new Error("Error al guardar respuestas temporales");
+      const errorData = await response.json();
+      throw new Error("Error al guardar respuestas temporales: " + (errorData.detail || response.status));
     }
 
     return await response.json();
@@ -304,7 +318,7 @@ export async function uploadImage(imageFile, authToken) {
   const response = await fetch(`${API_URL}upload_image/`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${authToken}`,
+      Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
     },
     body: formData,
   });
@@ -333,14 +347,17 @@ export async function getEvaluacionesPendientes(userId, token) {
     );
 
     if (!response.ok) {
-      throw new Error("Error al obtener evaluaciones pendientes");
+      const errorData = await response.json();
+      throw new Error(
+        errorData.detail || "Error al obtener evaluaciones pendientes"
+      );
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
     console.error("Error en getEvaluacionesPendientes:", error);
-    return []; // Devolver un array vacío en caso de error
+    throw error;
   }
 }
 
@@ -358,7 +375,8 @@ export async function iniciarNuevoIntento(evaluacionId, token) {
     );
 
     if (!response.ok) {
-      throw new Error("Error al iniciar nuevo intento");
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al iniciar nuevo intento");
     }
 
     return await response.json();
@@ -376,22 +394,24 @@ export async function finalizarIntento(
 ) {
   try {
     const response = await fetch(
-      `${API_URL}evaluaciones/${evaluacionId}/enviar/`,
+      `${API_URL}evaluaciones/${evaluacionId}/enviar/${intentoId}/`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token.startsWith("Bearer ") ? token : `Bearer ${token}`}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          intento_id: intentoId,
           respuestas: respuestas,
         }),
       }
     );
 
     if (!response.ok) {
-      throw new Error("Error al finalizar intento");
+      const errorData = await response.json();
+      throw new Error(
+        errorData.detail || `Error al enviar la evaluación: ${response.status}`
+      );
     }
 
     return await response.json();
@@ -409,14 +429,12 @@ export async function sincronizarTiempo(intentoId, tiempoRestante, authToken) {
 
   try {
     const response = await fetch(
-      `${API_URL}intentos/${intentoId}/sincronizar-tiempo/`,
+      `${API_URL}intentos/${intentoId}/guardar-temporal/`, // Asumiendo que 'sincronizar-tiempo' es similar a 'guardar-temporal'
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authToken.startsWith("Bearer ")
-            ? authToken
-            : `Bearer ${authToken}`,
+          Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
         },
         body: JSON.stringify({ tiempo_restante: tiempoRestante }),
       }
@@ -427,17 +445,11 @@ export async function sincronizarTiempo(intentoId, tiempoRestante, authToken) {
         console.error(`Intento with id ${intentoId} not found`);
         return null;
       }
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.detail ||
-            `Error al sincronizar el tiempo: ${response.status}`
-        );
-      } else {
-        const textError = await response.text();
-        throw new Error(`Non-JSON error response: ${textError}`);
-      }
+      const errorData = await response.json();
+      throw new Error(
+        errorData.detail ||
+          `Error al sincronizar el tiempo: ${response.status}`
+      );
     }
 
     const contentType = response.headers.get("content-type");
@@ -453,6 +465,9 @@ export async function sincronizarTiempo(intentoId, tiempoRestante, authToken) {
     throw error;
   }
 }
+
+
+
 
 export async function reportarPregunta(
   preguntaId,
@@ -473,17 +488,84 @@ export async function reportarPregunta(
         body: JSON.stringify({ intento_id: intentoId, descripcion, motivo }),
       }
     );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.detail || `Error al reportar la pregunta: ${response.status}`
-      );
-    }
-
-    return await response.json();
+    createToast("Problema reportado. Gracias por tu feedback.", "success");
   } catch (error) {
-    console.error("Error en reportarPregunta:", error);
-    throw error;
+    console.error("Error al reportar la pregunta:", error);
+    createToast("Error al reportar el problema", "error");
   }
+}
+
+
+
+
+
+
+
+
+const API_BASE = "http://localhost:8000/api/";
+
+
+// Utilidad para manejar errores de red
+async function handleResponse(response) {
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Error en la petición');
+    }
+    return response.json();
+}
+
+
+
+export async function iniciarIntento(evaluacionId, token) {
+    const response = await fetch(`${API_BASE}evaluaciones/${evaluacionId}/intento-actual/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    return handleResponse(response);
+}
+
+
+
+export async function guardarRespuestas(intentoId, respuestas, token) {
+    const response = await fetch(`${API_BASE}/intentos/${intentoId}/guardar/`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ respuestas })
+    });
+    return handleResponse(response);
+}
+
+
+// Control de retención de datos
+const CACHE_KEY_PREFIX = 'evaluacion_';
+
+export function guardarProgresoLocal(evaluacionId, datos) {
+    try {
+        localStorage.setItem(
+            `${CACHE_KEY_PREFIX}${evaluacionId}`,
+            JSON.stringify(datos)
+        );
+    } catch (error) {
+        console.error('Error guardando progreso local:', error);
+    }
+}
+
+export function obtenerProgresoLocal(evaluacionId) {
+    try {
+        const datos = localStorage.getItem(`${CACHE_KEY_PREFIX}${evaluacionId}`);
+        return datos ? JSON.parse(datos) : null;
+    } catch (error) {
+        console.error('Error leyendo progreso local:', error);
+        return null;
+    }
+}
+
+export function limpiarProgresoLocal(evaluacionId) {
+    localStorage.removeItem(`${CACHE_KEY_PREFIX}${evaluacionId}`);
 }

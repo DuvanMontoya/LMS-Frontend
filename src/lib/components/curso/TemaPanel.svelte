@@ -1,18 +1,10 @@
+<!-- src/lib/components/curso/TemaPanel.svelte -->
 <script>
   import { createEventDispatcher, onMount, afterUpdate } from "svelte";
   import { fade, slide, scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import {
-    faChevronDown,
-    faChevronRight,
-    faPlayCircle,
-    faCheckCircle,
-    faLock,
-    faArrowLeft,
-    faLayerGroup,
-    faTimes
-  } from "@fortawesome/free-solid-svg-icons";
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
+  import { faChevronDown, faChevronRight, faPlayCircle, faCheckCircle, faLock, faArrowLeft, faLayerGroup, faTimes } from "@fortawesome/free-solid-svg-icons";
 
   export let temas = [];
   export let leccionActual = null;
@@ -30,6 +22,7 @@
 
   const dispatch = createEventDispatcher();
 
+  // Calcular cuántas lecciones están completadas por tema
   $: temaCounts = temas.map((tema) => ({
     total: tema.lecciones.length,
     completadas: tema.lecciones.filter(
@@ -45,7 +38,7 @@
 
   function toggleTema(tema) {
     tema.expandido = !tema.expandido;
-    temas = temas; // Forzar actualización reactiva
+    temas = [...temas]; // Forzar actualización reactiva
   }
 
   function toggleTodosTemas() {
@@ -108,9 +101,10 @@
   class:panel-abierto={panelAbierto}
   bind:this={panelElement}
   on:scroll={() => scrollPosition = panelElement.scrollTop}
+  aria-label="Panel de Temas y Lecciones"
 >
   <div class="panel-header" class:scrolled={scrollPosition > 10}>
-    <button class="btn-volver" on:click={volverAtras} aria-label="Volver atrás">
+    <button class="btn-volver" on:click={volverAtras} aria-label="Volver a la página del curso">
       <FontAwesomeIcon icon={faArrowLeft} />
     </button>
     <h2 class="curso-titulo">{curso.titulo}</h2>
@@ -129,11 +123,14 @@
   <div class="panel-content">
     {#each temas as tema, temaIndex (tema.id)}
       <div class="tema-item">
-        <button class="tema-header" on:click={() => toggleTema(tema)}>
+        <button 
+          class="tema-header" 
+          on:click={() => toggleTema(tema)} 
+          aria-expanded={tema.expandido} 
+          aria-controls={`tema-${tema.id}`}
+        >
           <span class="tema-titulo">{tema.titulo}</span>
-          <span class="tema-contador"
-            >{temaCounts[temaIndex].completadas}/{temaCounts[temaIndex].total}</span
-          >
+          <span class="tema-contador">{temaCounts[temaIndex].completadas}/{temaCounts[temaIndex].total}</span>
           <span class="icono-chevron" class:rotated={tema.expandido}>
             <FontAwesomeIcon icon={faChevronRight} />
           </span>
@@ -150,7 +147,7 @@
               <li 
                 class="leccion-item-container" 
                 data-leccion-id={leccion.id}
-                in:fade={{ duration: 200, delay: 100 * tema.lecciones.indexOf(leccion) }}
+                transition:fade={{ duration: 200, delay: 100 * tema.lecciones.indexOf(leccion) }}
               >
                 <div
                   class="leccion-item"
@@ -161,6 +158,8 @@
                   tabindex="0"
                   role="button"
                   on:keydown={(event) => manejarEventoTeclado(event, leccion)}
+                  aria-disabled={leccion.bloqueada}
+                  aria-current={leccionActual && leccionActual.id === leccion.id ? "step" : undefined}
                 >
                   <span class="leccion-indicador"></span>
                   <span class="icono-leccion">
@@ -169,7 +168,7 @@
                   <span class="leccion-titulo">{leccion.titulo}</span>
                   <span class="leccion-duracion">{leccion.tiempo_estimado} min</span>
                   {#if leccionesCompletadas.get(leccion.id.toString())?.completada}
-                    <span class="icono-completado">
+                    <span class="icono-completado" aria-label="Lección completada">
                       <FontAwesomeIcon icon={faCheckCircle} />
                     </span>
                   {/if}
@@ -191,7 +190,7 @@
     width: 380px;
     height: 100vh;
     background-color: #ffffff;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.05);
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
     font-family: 'Poppins', sans-serif;
@@ -248,14 +247,18 @@
   .progreso-curso {
     padding: 1rem;
     background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .progreso-barra {
+    width: 100%;
     height: 8px;
     background-color: #e9ecef;
     border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 0.5rem;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
@@ -302,8 +305,9 @@
     transition: background-color 0.2s ease;
   }
 
-  .tema-header:hover {
+  .tema-header:hover, .tema-header:focus {
     background-color: #e9ecef;
+    outline: none;
   }
 
   .tema-titulo {
@@ -352,6 +356,10 @@
     margin: 0;
   }
 
+  .leccion-item-container {
+    margin-left: 1.5rem;
+  }
+
   .leccion-item {
     display: flex;
     align-items: center;
@@ -363,8 +371,9 @@
     overflow: hidden;
   }
 
-  .leccion-item:hover {
+  .leccion-item:hover, .leccion-item:focus {
     background-color: #e9ecef;
+    outline: none;
   }
 
   .leccion-item.activa {
@@ -554,7 +563,7 @@
       background-color: #2a2a2a;
     }
 
-    .tema-header:hover {
+    .tema-header:hover, .tema-header:focus {
       background-color: #3a3a3a;
     }
 
@@ -562,7 +571,7 @@
       color: #ffffff;
     }
 
-    .leccion-item:hover {
+    .leccion-item:hover, .leccion-item:focus {
       background-color: #3a3a3a;
     }
 

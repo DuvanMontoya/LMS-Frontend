@@ -16,7 +16,7 @@
   import { fade, fly, slide, scale } from 'svelte/transition';
   import { backOut, elasticOut } from 'svelte/easing';
   import { spring } from 'svelte/motion';
-  import { Linear } from 'svelte/easing';
+  import { linear } from 'svelte/easing';
 
   let evaluacion = null;
   let intentosRealizados = 0;

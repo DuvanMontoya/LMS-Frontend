@@ -10,6 +10,8 @@
     getEvaluacionById,
     enviarEvaluacion,
     obtenerIntento,
+    guardarProgreso,
+    iniciarNuevoIntento
   } from "$lib/api/evaluaciones/evaluaciones";
   import { createToast } from "$lib/utils/toast";
   import { browser } from "$app/environment";
@@ -25,6 +27,7 @@
   const showConfirmation = writable(false);
   const tiempoRestante = writable(0);
   const progreso = writable(0);
+  const hayIntentoEnCurso = writable(false);
 
   // Stores derivados
   const tiempoRestanteFormatted = derived(tiempoRestante, ($tiempoRestante) =>
@@ -114,9 +117,11 @@
 
       evaluacion.set(evaluacionData);
       intento.set(intentoData);
-      tiempoRestante.set(evaluacionData.tiempo_limite * 60);
+      if(intentoData.id){
+        hayIntentoEnCurso.set(true);
+      }
+      tiempoRestante.set(intentoData.tiempo_restante_guardado || evaluacionData.tiempo_limite * 60);
       respuestas.set(intentoData?.respuestas || {});
-
       iniciarCronometro();
       calcularProgreso();
 
@@ -154,6 +159,39 @@
       });
     }, 1000);
   }
+
+  async function iniciarNuevoIntentoWrapper() {
+    try {
+      const nuevoIntento = await iniciarNuevoIntento(id, authToken);
+      intento.set(nuevoIntento);
+      hayIntentoEnCurso.set(true); // Actualiza el estado para indicar que hay un intento en curso
+      tiempoRestante.set(get(evaluacion).tiempo_limite * 60); // Restablece el tiempo al límite de la evaluación
+      respuestas.set({}); // Limpia las respuestas anteriores
+      iniciarCronometro();
+      calcularProgreso();
+      createToast("Nuevo intento iniciado correctamente", "success");
+    } catch (error) {
+      console.error("Error al iniciar nuevo intento:", error);
+      createToast(error.message, "error");
+    }
+  }
+
+  async function continuarIntento() {
+    try {
+        // Aquí, simplemente actualizamos el estado local con el intento actual,
+        // ya que los datos del intento ya se cargaron en onMount
+        hayIntentoEnCurso.set(true);
+        tiempoRestante.set(get(intento).tiempo_restante_guardado);
+        respuestas.set(get(intento).respuestas);
+
+        iniciarCronometro();
+        calcularProgreso();
+        createToast("Continuando con el intento actual", "success");
+    } catch (error) {
+        console.error("Error al continuar el intento:", error);
+        createToast(error.message, "error");
+    }
+}
 
   async function handleSubmit(esAutomatico = false) {
     if (!esAutomatico && !$showConfirmation) {
@@ -272,21 +310,30 @@
   }
 
   async function reportarPregunta(preguntaId) {
-    try {
-      await fetch(`/api/preguntas/${preguntaId}/reportar`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authToken,
-        },
-        body: JSON.stringify({ intento_id: get(intento).id }),
-      });
-      createToast("Problema reportado. Gracias por tu feedback.", "success");
-    } catch (error) {
-      console.error("Error al reportar la pregunta:", error);
-      createToast("Error al reportar el problema", "error");
-    }
+  try {
+    await fetch(`http://localhost:8000/api/preguntas/${preguntaId}/reportar/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: authToken,
+      },
+      body: JSON.stringify({ intento_id: get(intento).id }),
+    });
+    createToast("Problema reportado. Gracias por tu feedback.", "success");
+  } catch (error) {
+    console.error("Error al reportar la pregunta:", error);
+    createToast("Error al reportar el problema", "error");
   }
+}
+
+function confirmarInicioEvaluacion() {
+  if (get(hayIntentoEnCurso)) {
+    continuarIntento();
+  } else {
+    iniciarNuevoIntentoWrapper();
+  }
+}
+
 </script>
 
 <svelte:head>
@@ -307,6 +354,12 @@
       <p>{$error}</p>
     </div>
   {:else if $evaluacion}
+  <div class="accion-evaluacion">
+    <button class="btn" on:click={confirmarInicioEvaluacion} disabled={$submitting}>
+      <span class="icon" aria-hidden="true">{get(hayIntentoEnCurso) ? '🔄' : '▶️'}</span>
+      {get(hayIntentoEnCurso) ? 'Continuar Evaluación' : 'Iniciar Evaluación'}
+    </button>
+  </div>
     <div
       class="evaluacion-content"
       in:fly={{ y: 20, duration: 300, easing: backOut }}
@@ -1140,4 +1193,10 @@
       box-shadow: 0 0 0 0 rgba(47, 133, 90, 0);
     }
   }
+  .accion-evaluacion {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
 </style>
+      

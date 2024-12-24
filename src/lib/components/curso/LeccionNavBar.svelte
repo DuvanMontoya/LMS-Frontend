@@ -1,3 +1,5 @@
+<!-- src/lib/components/curso/LeccionNavBar.svelte -->
+
 <script>
   import { createEventDispatcher } from 'svelte';
   import { FontAwesomeIcon } from '@fortawesome/svelte-fontawesome';
@@ -23,21 +25,36 @@
   }
 </script>
 
-<nav class="leccion-nav-bar" class:panel-abierto={panelAbierto}>
-<div class="nav-content">
-  <button class="btn-nav btn-anterior" on:click={irLeccionAnterior} disabled={indiceActual === 0}>
-    <FontAwesomeIcon icon={faChevronLeft} />
-    <span>Anterior</span>
-  </button>
-  <button class="btn-completar" on:click={completarLeccion} disabled={completada}>
-    <FontAwesomeIcon icon={faCheck} />
-    <span>{completada ? 'Completada' : 'Terminar'}</span>
-  </button>
-  <button class="btn-nav btn-siguiente" on:click={irLeccionSiguiente} disabled={indiceActual === totalLecciones - 1}>
-    <span>Siguiente</span>
-    <FontAwesomeIcon icon={faChevronRight} />
-  </button>
-</div>
+<nav class="leccion-nav-bar" class:panel-abierto={panelAbierto} aria-label="Barra de navegación de lecciones">
+  <div class="nav-content">
+    <button 
+      class="btn-nav btn-anterior" 
+      on:click={irLeccionAnterior} 
+      disabled={indiceActual === 0}
+      aria-label="Ir a la lección anterior"
+    >
+      <FontAwesomeIcon icon={faChevronLeft} />
+      <span class="btn-text">Anterior</span>
+    </button>
+    <button 
+      class="btn-completar" 
+      on:click={completarLeccion} 
+      disabled={completada}
+      aria-label={completada ? "Lección completada" : "Marcar lección como completada"}
+    >
+      <FontAwesomeIcon icon={faCheck} />
+      <span class="btn-text">{completada ? 'Completada' : 'Completar'}</span>
+    </button>
+    <button 
+      class="btn-nav btn-siguiente" 
+      on:click={irLeccionSiguiente} 
+      disabled={indiceActual === totalLecciones - 1}
+      aria-label="Ir a la siguiente lección"
+    >
+      <span class="btn-text">Siguiente</span>
+      <FontAwesomeIcon icon={faChevronRight} />
+    </button>
+  </div>
 </nav>
 
 <style>
@@ -47,7 +64,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-top: 1px solid rgba(0, 0, 0, 0.1);
   height: 70px;
@@ -56,7 +73,7 @@
   align-items: center;
   z-index: 998;
   transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .leccion-nav-bar.panel-abierto {
@@ -80,11 +97,10 @@
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   padding: 0.75rem 1.5rem;
   border-radius: 25px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .btn-nav {
@@ -95,7 +111,14 @@
 .btn-nav:hover:not(:disabled) {
   background-color: #e2e8f0;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-nav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-anterior:hover:not(:disabled) {
@@ -108,7 +131,7 @@
 
 .btn-completar {
   background: linear-gradient(135deg, #6e8efb, #a777e3);
-  color: white;
+  color: #ffffff;
   position: relative;
   overflow: hidden;
 }
@@ -133,11 +156,15 @@
   box-shadow: 0 4px 15px rgba(110, 142, 251, 0.4);
 }
 
-.btn-nav:disabled, .btn-completar:disabled {
-  opacity: 0.5;
+.btn-completar:disabled {
+  background: #cbd5e0;
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
+}
+
+.btn-text {
+  display: inline-block;
 }
 
 @media (max-width: 768px) {
@@ -145,11 +172,15 @@
     left: 0;
   }
 
+  .nav-content {
+    padding: 0 0.5rem;
+  }
+
   .btn-nav, .btn-completar {
     padding: 0.6rem 1rem;
   }
 
-  .btn-nav span {
+  .btn-text {
     display: none;
   }
 }
