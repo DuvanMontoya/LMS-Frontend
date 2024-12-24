@@ -77,6 +77,12 @@
     };
   });
 
+  // Cuando abres el bottom sheet:
+function openBottomSheet(content) {
+  activeBottomSheetContent = content;
+  showBottomSheet = true;
+}
+
   /**
    * Carga la info del artículo y estados asociados (matrícula, likes, etc.)
    */
@@ -282,28 +288,30 @@
     sound.play();
   }
 
-  async function handleComment(content) {
-    if (!content.trim()) return;
-    try {
-      const token = get(sessionStore).access;
-      await apiService.postComment(articleId, content, token);
-      showComments = false;
-      await loadInitialData();
-    } catch (err) {
-      console.error('Error posting comment:', err);
+async function handleComment(content) {
+  try {
+    const token = $sessionStore?.access;
+    if (!token) {
+      throw new Error('Debes iniciar sesión para comentar');
     }
+    await apiService.postComment(articleId, content, token);
+    await loadInitialData();
+  } catch (error) {
+    console.error('Error posting comment:', error);
   }
+}
 
   async function handleRating(rating) {
-    try {
-      const token = get(sessionStore).access;
-      await apiService.rateArticle(articleId, rating, token);
-      showBottomSheet = false;
-      // Podrías refrescar si deseas
-    } catch (err) {
-      console.error('Error rating article:', err);
-    }
+  try {
+    const token = $sessionStore.access;
+    if (!token) throw new Error('No auth token');
+    
+    await apiService.rateArticle(articleId, rating, token);
+    showBottomSheet = false;
+  } catch (error) {
+    console.error('Error al calificar:', error);
   }
+}
 
   function toggleDarkMode() {
     isDarkMode = !isDarkMode;
@@ -528,17 +536,20 @@
 
   <!-- BottomSheet -->
   {#if showBottomSheet}
-    <BottomSheet
-      activeBottomSheetContent="{activeBottomSheetContent}"
-      {toc}
-      {comments}
-      {activeSection}
-      onNavigate={scrollToSection}
-      onPostComment={handleComment}
-      onRate={handleRating}
-      on:close={() => (showBottomSheet = false)}
-    />
-  {/if}
+  <BottomSheet
+    activeContent={activeBottomSheetContent}
+    {toc}
+    {comments}
+    {activeSection}
+    onNavigate={scrollToSection}
+    onPostComment={handleComment}
+    onRate={handleRating}
+    on:close={() => {
+      showBottomSheet = false;
+      activeBottomSheetContent = '';
+    }}
+  />
+{/if}
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}

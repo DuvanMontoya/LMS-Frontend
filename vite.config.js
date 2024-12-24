@@ -1,17 +1,14 @@
-import { defineConfig } from 'vite';
-import { sveltekit } from '@sveltejs/kit/vite';
-
-import path from 'path';
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [sveltekit()],
-  resolve: {
-    alias: {
-      '@sveltejs/svelte-virtual-list': path.resolve('./node_modules/@sveltejs/svelte-virtual-list'),
-      'svelte-toasts': path.resolve('./node_modules/svelte-toasts')
-    }
+  server: {
+    fs: {
+      allow: ["."],
+    },
   },
   optimizeDeps: {
-    include: ['@sveltejs/svelte-virtual-list', 'svelte-toasts']
-  }
+    include: ["lodash.get", "lodash.isequal", "lodash.clonedeep"],
+  },
 });

@@ -1,5 +1,6 @@
 <!-- src/lib/components/articulo/MobileNav.svelte -->
 <script>
+  import { slide, fade, fly } from "svelte/transition";
   export let isLiked;
   export let likesCount;
   export let onLike;

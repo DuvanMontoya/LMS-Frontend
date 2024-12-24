@@ -13,7 +13,7 @@
     export let onReset = () => {};
   </script>
   
-  <section 
+  <section
     class="articles-section"
     transition:fade={{ duration: 300 }}
   >
@@ -26,13 +26,13 @@
     {:else}
       <div class="articles-grid">
         {#each articles as article (article.id)}
-          <div 
+          <div
             class="article-item"
-            in:fly={{ 
-              y: 20, 
-              duration: 400, 
-              delay: 100, 
-              easing: quintOut 
+            in:fly={{
+              y: 20,
+              duration: 400,
+              delay: 100,
+              easing: quintOut
             }}
           >
             <ArticleCard {article} />
@@ -50,16 +50,18 @@
   
     .articles-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 1.5rem;
       padding: 0.5rem;
+      /* Para que las tarjetas queden a la misma altura, 
+         puedes experimentar con align-items o algo similar. */
+      align-items: start;
     }
   
     .article-item {
       height: 100%;
       transition: transform var(--transition-speed) ease;
     }
-  
     .article-item:hover {
       transform: translateY(-4px);
     }
@@ -69,4 +71,4 @@
         grid-template-columns: 1fr;
       }
     }
-  </style>
+  </style>  

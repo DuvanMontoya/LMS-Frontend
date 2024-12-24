@@ -9,15 +9,17 @@
   }
 </script>
 
-<div class="modal" on:click|self={close} role="dialog" aria-modal="true">
-  <div class="modal-content" on:click|stopPropagation>
-    <button class="close-btn" on:click={close} aria-label="Cerrar modal">&times;</button>
-    <slot></slot>
-  </div>
+<div class="modal-backdrop" on:click={close} on:keydown={close} role="presentation">
+  <dialog class="modal-content" open>
+    <div class="modal-inner" on:click|stopPropagation role="dialog" tabindex="-1">
+      <button class="close-btn" on:click={close} aria-label="Cerrar modal">&times;</button>
+      <slot></slot>
+    </div>
+  </dialog>
 </div>
 
 <style>
-  .modal {
+  .modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;

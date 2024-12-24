@@ -28,7 +28,7 @@
   <div class="toc-header">
     <h2>Contenido del Artículo</h2>
     {#if isMobile}
-      <button class="close-button" on:click={toggleTOC}>
+      <button class="close-button" on:click={toggleTOC} aria-label="Cerrar tabla de contenido">
         <i class="fas fa-times"></i>
       </button>
     {/if}

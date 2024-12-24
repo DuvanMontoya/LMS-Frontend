@@ -1,3 +1,4 @@
+<!-- ArticleCard.svelte -->
 <script>
   import { onMount, createEventDispatcher } from "svelte";
   import { slide, fade, fly } from "svelte/transition";
@@ -17,8 +18,10 @@
   let isPDFVisible = false;
   let isLoadingLike = false;
   let isHovered = false;
+  let showHearts = false;
   const dispatch = createEventDispatcher();
 
+  // Suscripción reactiva a 'sessionStore'
   $: accessToken = $sessionStore?.access;
 
   async function checkEnrollment() {
@@ -60,8 +63,6 @@
     isPDFVisible = !isPDFVisible;
   }
 
-  let showHearts = false;
-
   function showLikeAnimation() {
     showHearts = true;
     setTimeout(() => {
@@ -70,8 +71,10 @@
   }
 
   onMount(() => {
-    checkEnrollment();
-    fetchLikeStatusForArticle();
+    if (article) {
+      checkEnrollment();
+      fetchLikeStatusForArticle();
+    }
   });
 
   function getFormattedDate(dateString) {
@@ -84,10 +87,11 @@
 
   function getAuthorInitials(author) {
     if (!author) return "";
-    const names = author.split(" ");
+    const names = author.trim().split(" ");
     return names.map(name => name.charAt(0).toUpperCase()).join("");
   }
 
+  // Variables de estado de badges
   $: statusBadge = isEnrolled ? {
     text: 'Matriculado',
     color: 'var(--success-500)',
@@ -99,11 +103,11 @@
   };
 </script>
 
+{#if article}
 <article 
-  class="article-card"
+  class="article-card {isHovered ? 'hovered' : ''}"
   on:mouseenter={() => isHovered = true}
   on:mouseleave={() => isHovered = false}
-  class:hovered={isHovered}
 >
   <div class="card-content">
     <!-- Header y metadata -->
@@ -111,12 +115,12 @@
       <div class="header-content">
         <div class="badges">
           <span class="type-badge" style="--badge-color: {article.tipo?.color || '#3b82f6'}">
-            <i class="fas fa-bookmark"></i>
+            <i class="fas fa-bookmark" aria-hidden="true"></i>
             {article.tipo?.nombre || 'Artículo'}
           </span>
           {#if article.es_destacado}
             <span class="featured-badge">
-              <i class="fas fa-star"></i>
+              <i class="fas fa-star" aria-hidden="true"></i>
               Destacado
             </span>
           {/if}
@@ -126,12 +130,12 @@
         </h2>
         <div class="card-meta">
           <span class="meta-item">
-            <i class="fas fa-calendar"></i>
+            <i class="fas fa-calendar" aria-hidden="true"></i>
             {getFormattedDate(article.creado)}
           </span>
           <span class="meta-divider">•</span>
           <span class="meta-item">
-            <i class="fas fa-book"></i>
+            <i class="fas fa-book" aria-hidden="true"></i>
             {article.curso?.nombre || 'Curso no especificado'}
           </span>
         </div>
@@ -145,12 +149,12 @@
         
         <div class="card-details">
           <div class="university-info">
-            <i class="fas fa-university"></i>
+            <i class="fas fa-university" aria-hidden="true"></i>
             <span>{article.universidad?.nombre || 'Universidad no especificada'}</span>
           </div>
           
           <div class="area-info">
-            <i class="fas fa-flask"></i>
+            <i class="fas fa-flask" aria-hidden="true"></i>
             <span>{article.area?.nombre || 'Área no especificada'}</span>
           </div>
         </div>
@@ -158,15 +162,15 @@
         <div class="card-stats">
           <div class="stat-group">
             <div class="stat-item" title="Vistas">
-              <i class="fas fa-eye"></i>
+              <i class="fas fa-eye" aria-hidden="true"></i>
               <span>{article.num_vistas || 0}</span>
             </div>
             <div class="stat-item" title="Calificación">
-              <i class="fas fa-star"></i>
+              <i class="fas fa-star" aria-hidden="true"></i>
               <span>{article.calificacion_promedio?.toFixed(1) || '0.0'}</span>
             </div>
             <div class="stat-item" title="Favoritos">
-              <i class="fas fa-heart"></i>
+              <i class="fas fa-heart" aria-hidden="true"></i>
               <span>{likeStatus?.totalLikes || article.num_favoritos || 0}</span>
             </div>
           </div>
@@ -181,48 +185,40 @@
               {#if article.autor}
                 {getAuthorInitials(article.autor)}
               {:else}
-                <i class="fas fa-user"></i>
+                <i class="fas fa-user" aria-hidden="true"></i>
               {/if}
             </div>
-          </div>
-          <div class="author-info">
-            <span class="author-name">{article.autor || 'Autor desconocido'}</span>
-            <span class="author-role">Experto académico</span>
           </div>
         </div>
 
         <div class="action-buttons">
           <a 
             href="/articulos/{article.id}" 
-            class="primary-button"
-            class:enrolled={isEnrolled}
+            class="primary-button {isEnrolled ? 'enrolled' : ''}"
           >
-            <i class="fas {isEnrolled ? 'fa-book-open' : 'fa-eye'}"></i>
+            <i class="fas {isEnrolled ? 'fa-book-open' : 'fa-eye'}" aria-hidden="true"></i>
             <span>{isEnrolled ? 'Leer artículo' : 'Vista previa'}</span>
           </a>
 
           {#if article.archivo_adjunto}
               <button 
-                class="pdf-button"
-                class:active={isPDFVisible}
+                class="pdf-button {isPDFVisible ? 'active' : ''}"
                 on:click={togglePDFViewer}
-                aria-label={isPDFVisible ? 'Close PDF viewer' : 'Open PDF viewer'}
+                aria-label={isPDFVisible ? 'Cerrar visor de PDF' : 'Abrir visor de PDF'}
               >
-                <i class="fas {isPDFVisible ? 'fa-times' : 'fa-file-pdf'}"></i>
+                <i class="fas {isPDFVisible ? 'fa-times' : 'fa-file-pdf'}" aria-hidden="true"></i>
               </button>
           {/if}
           <button 
-            class="like-button"
-            class:liked={likeStatus?.isLiked}
-            class:loading={isLoadingLike}
+            class="like-button {likeStatus?.isLiked ? 'liked' : ''} {isLoadingLike ? 'loading' : ''}"
             on:click={handleLike}
             disabled={isLoadingLike}
-            aria-label={likeStatus?.isLiked ? 'Unlike article' : 'Like article'}
+            aria-label={likeStatus?.isLiked ? 'No me gusta el artículo' : 'Me gusta el artículo'}
           >
             {#if isLoadingLike}
-              <i class="fas fa-circle-notch fa-spin"></i>
+              <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
             {:else}
-              <i class="fas fa-heart"></i>
+              <i class="fas fa-heart" aria-hidden="true"></i>
             {/if}
           </button>
         </div>
@@ -238,39 +234,94 @@
       <PDFViewer url={`http://localhost:8000/api${article.archivo_url}`} />
     </div>
   {/if}
-</article>
-  {#if isPDFVisible}
-    <div 
-      class="pdf-section"
-      transition:slide={{ duration: 300 }}
-    >
-      <PDFViewer url={`http://localhost:8000/api${article.archivo_url}`} />
+
+  {#if showHearts}
+    <div class="hearts-container" transition:fade>
+      {#each Array(5) as _, i}
+        <div 
+          class="heart-particle"
+          style="--delay: {i * 0.1}s; --angle: {Math.random() * 60 - 30}deg; --distance: {Math.random() * 100 + 50}px;"
+        >
+          <i class="fas fa-heart" aria-hidden="true"></i>
+        </div>
+      {/each}
     </div>
   {/if}
+</article>
+{/if}
 
-    {#if showHearts}
-      <div class="hearts-container" transition:fade>
-        {#each Array(5) as _, i}
-          <div 
-            class="heart-particle"
-            style="--delay: {i * 0.1}s; --angle: {Math.random() * 60 - 30}deg"
-          >
-            <i class="fas fa-heart"></i>
-          </div>
-        {/each}
-      </div>
-    {/if}
-  
-  <style>
-    .article-card {
-      position: relative;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
-        0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      overflow: hidden;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+<style>
+  /* Variables de color requeridas */
+  :root {
+    /* Colores primarios */
+    --primary-rgb: 59, 130, 246;
+    --primary-50: #eff6ff;
+    --primary-100: #dbeafe;
+    --primary-400: #60a5fa;
+    --primary-500: #3b82f6;
+    --primary-600: #2563eb;
+    --secondary-500: #6b7280; /* Añadido para el borde superior */
+
+    /* Colores de éxito */
+    --success-500: #10b981;
+    --success-600: #059669;
+
+    /* Colores de peligro */
+    --danger-rgb: 239, 68, 68;
+    --danger-50: #fef2f2;
+    --danger-100: #fee2e2;
+    --danger-200: #fecaca;
+    --danger-400: #f87171;
+    --danger-500: #ef4444;
+    --danger-600: #dc2626;
+    --danger-900: #7f1d1d;
+
+    /* Colores de advertencia */
+    --warning-100: #fef3c7;
+    --warning-500: #f59e0b;
+    --warning-700: #b45309;
+
+    /* Escala de grises */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+  }
+
+  /* Utilitarios de accesibilidad */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
+  }
+
+  /* Manejo de enfoque */
+  :focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+  }
+
+  /* Core card styles */
+  .article-card {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
   .article-card::before {
     content: '';
@@ -459,123 +510,6 @@
     z-index: 1;
   }
 
-  .author-info {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .author-name {
-    color: var(--gray-900);
-    font-weight: 600;
-  }
-
-  .author-role {
-    color: var(--gray-500);
-    font-size: 0.875rem;
-  }
-
-  .action-buttons {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .primary-button,
-  .pdf-button,
-  .like-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.25rem;
-    border-radius: 12px;
-    font-weight: 500;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: none;
-    cursor: pointer;
-  }
-
-  .primary-button {
-    background: linear-gradient(
-      135deg, 
-      var(--primary-500), 
-      var(--primary-600)
-    );
-    color: white;
-    text-decoration: none;
-  }
-
-  .primary-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
-  }
-
-  .primary-button.enrolled {
-    background: linear-gradient(
-      135deg,
-      var(--success-500),
-      var(--success-600)
-    );
-  }
-
-  .pdf-button,
-  .like-button {
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    font-size: 1.1rem;
-  }
-
-  .pdf-button {
-    background: linear-gradient(
-      135deg,
-      var(--danger-500),
-      var(--danger-600)
-    );
-    color: white;
-  }
-
-  .pdf-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(var(--danger-rgb), 0.2);
-  }
-
-  .pdf-button.active {
-    background: var(--gray-700);
-  }
-
-  .like-button {
-    background: white;
-    border: 2px solid var(--gray-200);
-    color: var(--gray-400);
-  }
-
-  .like-button:hover {
-    border-color: var(--danger-200);
-    color: var(--danger-500);
-    transform: translateY(-2px);
-  }
-
-  .like-button.liked {
-    background: var(--danger-50);
-    border-color: var(--danger-500);
-    color: var(--danger-500);
-  }
-
-  .like-button.loading {
-    cursor: not-allowed;
-    opacity: 0.7;
-  }
-
-  .pdf-section {
-    padding: 1.5rem;
-    background: var(--gray-50);
-    border-top: 1px solid var(--gray-200);
-  }
-
   /* Animaciones y efectos */
   .hearts-container {
     position: fixed;
@@ -584,32 +518,38 @@
     transform: translate(-50%, -50%);
     z-index: 9999;
     pointer-events: none;
+    width: 200px;
+    height: 200px;
   }
 
   .heart-particle {
     position: absolute;
     color: var(--danger-500);
     font-size: 2rem;
-    animation: floatHeart 1.5s ease-out forwards;
+    filter: drop-shadow(0 4px 8px rgba(var(--danger-rgb), 0.3));
+    will-change: transform;
+    animation: floatHeart 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     animation-delay: var(--delay);
+    transform: rotate(var(--angle)) translateY(-var(--distance));
   }
 
   @keyframes floatHeart {
     0% {
-      transform: 
-        translate(0, 0) 
-        rotate(var(--angle)) 
-        scale(0);
+      transform: rotate(var(--angle)) translateY(0) scale(0);
       opacity: 0;
     }
-    25% {
+    15% {
+      opacity: 1;
+      transform: rotate(calc(var(--angle) + 10deg)) translateY(-20px) scale(1.2);
+    }
+    30% {
+      transform: rotate(calc(var(--angle) + 20deg)) translateY(-40px) scale(1);
+    }
+    70% {
       opacity: 1;
     }
     100% {
-      transform: 
-        translate(var(--angle), -100px) 
-        rotate(calc(var(--angle) * 2)) 
-        scale(1);
+      transform: rotate(calc(var(--angle) + 30deg)) translateY(-100px) scale(0.5);
       opacity: 0;
     }
   }
@@ -637,55 +577,14 @@
     100% { transform: translate(100%, 100%) rotate(45deg); }
   }
 
-  /* Responsive styles */
-  @media (max-width: 768px) {
-    .card-content {
-      padding: 1.25rem;
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-    }
-
-    .card-footer {
-      flex-direction: column;
-      gap: 1rem;
-      align-items: stretch;
-    }
-
-    .action-buttons {
-      justify-content: space-between;
-    }
-
-    .primary-button {
-      flex: 1;
-    }
+  /* PDF section transitions */
+  .pdf-section {
+    padding: 1.5rem;
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
   }
 
-  @media (max-width: 640px) {
-    .badges {
-      flex-wrap: wrap;
-    }
-
-    .card-meta {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .meta-divider {
-      display: none;
-    }
-
-    .card-details {
-      flex-direction: column;
-    }
-
-    .stat-group {
-      justify-content: space-between;
-    }
-  }
-
-  /* Soporte para modo oscuro */
+  /* Dark mode styles */
   :global(.dark) .article-card {
     background: var(--gray-800);
   }
@@ -720,65 +619,127 @@
     color: var(--danger-400);
   }
 
-  /* Variables de color requeridas */
-  :root {
-    /* Colores primarios */
-    --primary-rgb: 59, 130, 246;
-    --primary-50: #eff6ff;
-    --primary-100: #dbeafe;
-    --primary-400: #60a5fa;
-    --primary-500: #3b82f6;
-    --primary-600: #2563eb;
-    
-    /* Colores de éxito */
-    --success-500: #10b981;
-    --success-600: #059669;
-    
-    /* Colores de peligro */
-    --danger-rgb: 239, 68, 68;
-    --danger-50: #fef2f2;
-    --danger-100: #fee2e2;
-    --danger-200: #fecaca;
-    --danger-400: #f87171;
-    --danger-500: #ef4444;
-    --danger-600: #dc2626;
-    --danger-900: #7f1d1d;
-    
-    /* Colores de advertencia */
-    --warning-100: #fef3c7;
-    --warning-500: #f59e0b;
-    --warning-700: #b45309;
-    
-    /* Escala de grises */
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-400: #9ca3af;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-700: #374151;
-    --gray-800: #1f2937;
-    --gray-900: #111827;
+  /* Primary Button */
+  .primary-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 14px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 4px 15px -3px rgba(var(--primary-rgb), 0.3);
   }
 
-  /* Utilitarios de accesibilidad */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
+  .primary-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -4px rgba(var(--primary-rgb), 0.4);
   }
 
+  .primary-button.enrolled {
+    background: linear-gradient(135deg, var(--success-500), var(--success-600));
+    box-shadow: 0 4px 15px -3px rgba(16, 185, 129, 0.3);
+  }
 
-  /* Manejo de enfoque */
-  :focus-visible {
-    outline: 2px solid var(--primary-500);
-    outline-offset: 2px;
+  .primary-button.enrolled:hover {
+    box-shadow: 0 8px 20px -4px rgba(16, 185, 129, 0.4);
+  }
+
+  /* PDF Button */
+  .pdf-button,
+  .like-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 14px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pdf-button {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    background: linear-gradient(135deg, var(--danger-500), var(--danger-600));
+    color: white;
+    box-shadow: 0 4px 15px -3px rgba(var(--danger-rgb), 0.3);
+  }
+
+  .pdf-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .pdf-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -4px rgba(var(--danger-rgb), 0.4);
+  }
+
+  .pdf-button:hover::after {
+    opacity: 1;
+  }
+
+  .pdf-button.active {
+    background: var(--gray-700);
+  }
+
+  /* Like Button */
+  .like-button {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    background: white;
+    border: 2px solid var(--gray-200);
+    color: var(--gray-400);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .like-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--danger-50), var(--danger-100));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .like-button:hover {
+    border-color: var(--danger-200);
+    color: var(--danger-500);
+    transform: translateY(-2px) scale(1.05);
+  }
+
+  .like-button:hover::before {
+    opacity: 1;
+  }
+
+  .like-button.liked {
+    background: var(--danger-50);
+    border-color: var(--danger-400);
+    color: var(--danger-500);
+  }
+
+  .like-button.liked::before {
+    opacity: 1;
+  }
+
+  .like-button.loading {
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 </style>
-    

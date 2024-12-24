@@ -38,10 +38,9 @@
   transition:fade={{ duration: 200 }}
 >
 </button>
-  <div 
+  <form 
     class="modal-container"
-    on:click|stopPropagation
-    on:keydown|stopPropagation
+    on:submit|preventDefault={handleSubmit}
     role="dialog"
     aria-modal="true"
     aria-labelledby="modal-title"
@@ -126,7 +125,7 @@
         </button>
       </footer>
     </div>
-  </div>
+  </form>
 
 <style>
   .modal-backdrop {
