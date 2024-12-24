@@ -1,97 +1,170 @@
-<!-- src/lib/components/Article/MobileNav.svelte -->
+<!-- src/lib/components/articulo/MobileNav.svelte -->
 <script>
-    import Button from '$lib/components/ui/Button.svelte';
-    export let isLiked = false;
-    export let likesCount = 0;
-    export let onLike = () => {};
-    export let onComments = () => {};
-    export let onRate = () => {};
-    export let onToggleDarkMode = () => {};
-  </script>
-  
-  <nav class="mobile-nav">
-    <Button
-      variant="primary"
-      class="nav-button"
+  export let isLiked;
+  export let likesCount;
+  export let onLike;
+  export let onComments;
+  export let onRate;
+  export let onToggleDarkMode;
+  export let onScrollToTop;
+  export let isDarkMode;
+  export let showToc;
+
+  let lastScrollY = 0;
+  let isVisible = true;
+
+  function handleScroll() {
+    const currentScrollY = window.scrollY;
+    isVisible = currentScrollY <= lastScrollY || currentScrollY < 100;
+    lastScrollY = currentScrollY;
+  }
+</script>
+
+<svelte:window on:scroll={handleScroll} />
+
+{#if isVisible}
+<nav 
+  class="mobile-nav"
+  transition:fly={{ y: 100, duration: 200 }}
+>
+  <div class="nav-group primary">
+    <button 
+      class="nav-button like {isLiked ? 'liked' : ''}"
       on:click={onLike}
       aria-label="Me gusta"
     >
-      <i class={`fas fa-heart ${isLiked ? 'liked' : ''}`}></i>
-      <span>{likesCount}</span>
-    </Button>
+      <i class="fas fa-heart"></i>
+      {#if likesCount > 0}
+        <span class="count-badge">{likesCount}</span>
+      {/if}
+    </button>
     
-    <Button
-      variant="primary"
+    <button 
       class="nav-button"
       on:click={onComments}
       aria-label="Comentarios"
     >
       <i class="fas fa-comments"></i>
-      <span>Comentarios</span>
-    </Button>
+    </button>
     
-    <Button
-      variant="primary"
+    <button 
       class="nav-button"
       on:click={onRate}
       aria-label="Calificar"
     >
       <i class="fas fa-star"></i>
-      <span>Calificar</span>
-    </Button>
+    </button>
+  </div>
+
+  <div class="nav-group secondary">
+    <button 
+      class="nav-button"
+      on:click={() => showToc = !showToc}
+      aria-label="Índice"
+      class:active={showToc}
+    >
+      <i class="fas fa-list"></i>
+    </button>
     
-    <Button
-      variant="primary"
+    <button 
       class="nav-button"
       on:click={onToggleDarkMode}
-      aria-label="Cambiar modo oscuro"
+      aria-label="Cambiar tema"
     >
       <i class={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
-      <span>{isDarkMode ? "Claro" : "Oscuro"}</span>
-    </Button>
-  </nav>
-  
-  <style>
+    </button>
+    
+    <button 
+      class="nav-button"
+      on:click={onScrollToTop}
+      aria-label="Volver arriba"
+    >
+      <i class="fas fa-arrow-up"></i>
+    </button>
+  </div>
+</nav>
+{/if}
+
+<style>
+  .mobile-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--background-color2);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+  }
+
+  .nav-group {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .nav-button {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--border-radius);
+    border: none;
+    background: none;
+    color: var(--text-color);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all var(--transition-speed);
+  }
+
+  .nav-button:hover,
+  .nav-button.active {
+    background-color: var(--background-elevated);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+  }
+
+  .nav-button.like {
+    color: var(--text-color-lighter);
+  }
+
+  .nav-button.like.liked {
+    color: #ef4444;
+    animation: likeEffect 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .count-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  @keyframes likeEffect {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  @media (max-width: 480px) {
     .mobile-nav {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: var(--background-color2);
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      padding: 0.75rem 0;
-      transition: all var(--transition-speed);
+      padding: 0.75rem;
     }
-  
+
     .nav-button {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 0.5rem;
-      background: none;
-      border: none;
-      color: var(--text-color);
-      font-size: 0.8rem;
-      cursor: pointer;
-      transition: all var(--transition-speed);
+      width: 42px;
+      height: 42px;
+      font-size: 1.1rem;
     }
-  
-    .nav-button i {
-      font-size: 1.4rem;
-      margin-bottom: 0.25rem;
-    }
-  
-    .nav-button:hover {
-      color: var(--accent-color);
-    }
-  
-    .liked {
-      color: #ff4136;
-    }
-  </style>  
+  }
+</style>

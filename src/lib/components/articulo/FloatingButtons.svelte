@@ -1,116 +1,135 @@
-<!-- src/lib/components/Article/FloatingButtons.svelte -->
 <script>
-    import Button from '$lib/components/ui/Button.svelte';
-    // import { swipe } from '$lib/transitions/swipe.js'; // Ruta correcta
-    // import { swipe } from 'svelte-swipe-action';
-    export let isLiked = false;
-    export let likesCount = 0;
-    export let onLike = () => {};
-    export let onComments = () => {};
-    export let onRate = () => {};
-    export let onToggleDarkMode = () => {};
-    export let onScrollToTop = () => {};
-    export let show = false; // Asegúrate de definir la prop 'show'
-  </script>
-  
-  {#if show}
-    <div class="floating-buttons">
-      <Button
-        variant="primary"
-        class="floating-button like-button"
-        on:click={onLike}
-        aria-label="Me gusta"
-      >
-        <i class={`fas fa-heart ${isLiked ? 'liked' : ''}`}></i>
-        <span>{likesCount}</span>
-      </Button>
-      
-      <Button
-        variant="primary"
-        class="floating-button"
-        on:click={onComments}
-        aria-label="Comentarios"
-      >
-        <i class="fas fa-comments"></i>
-      </Button>
-      
-      <Button
-        variant="primary"
-        class="floating-button"
-        on:click={onRate}
-        aria-label="Calificar"
-      >
-        <i class="fas fa-star"></i>
-      </Button>
-      
-      <Button
-        variant="primary"
-        class="floating-button"
-        on:click={onToggleDarkMode}
-        aria-label="Cambiar modo oscuro"
-      >
-        <i class={`fas ${isDarkMode ? 'fa-sun' : 'fa-moon'}`}></i>
-      </Button>
-      
-      <Button
-        variant="secondary"
-        class="floating-button"
-        on:click={onScrollToTop}
-        aria-label="Volver arriba"
-      >
-        <i class="fas fa-arrow-up"></i>
-      </Button>
-    </div>
-  {/if}
-  
-  <style>
-    .floating-buttons {
-      position: fixed;
-      bottom: 2rem;
-      right: 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      transition: all var(--transition-speed);
-      z-index: 1000;
+  import { createEventDispatcher } from 'svelte';
+
+  // Recibimos estos props para mostrar estado (no son callbacks):
+  export let isLiked = false;
+  export let likesCount = 0;
+  export let isDarkMode = false;
+
+  // Creamos dispatcher para lanzar eventos
+  const dispatch = createEventDispatcher();
+
+  /**
+   * Maneja el click en cada botón y emite el evento correspondiente
+   */
+  function handleButtonClick(action) {
+    if (action === 'like') {
+      dispatch('like');
+    } else if (action === 'comments') {
+      dispatch('comments');
+    } else if (action === 'rate') {
+      dispatch('rate');
+    } else if (action === 'toggleDarkMode') {
+      dispatch('toggleDarkMode');
+    } else if (action === 'scrollToTop') {
+      dispatch('scrollToTop');
     }
-  
-    .floating-button {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background-color: var(--primary-color);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-      cursor: pointer;
-      transition: all var(--transition-speed);
-      box-shadow: var(--box-shadow);
-    }
-  
-    .floating-button:hover {
-      background-color: var(--secondary-color);
-      transform: scale(1.1);
-    }
-  
-    .like-button {
-      position: relative;
-    }
-  
-    .like-button span {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background-color: var(--accent-color);
-      color: var(--text-color);
-      font-size: 0.8rem;
-      padding: 2px 5px;
-      border-radius: 10px;
-    }
-  
-    .liked {
-      color: #ff4136;
-    }
-  </style>  
+  }
+</script>
+
+<style>
+  .floating-buttons {
+    position: fixed;
+    bottom: 2rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 999;
+  }
+
+  .fab-button {
+    background-color: var(--background-color2);
+    box-shadow: var(--box-shadow);
+    border: none;
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    color: var(--text-color);
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+  }
+
+  .fab-button:hover {
+    transform: translateY(-2px);
+    background-color: var(--background-elevated);
+  }
+
+  .like-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .like-indicator .fa-heart {
+    color: #e63946;
+  }
+</style>
+
+<div class="floating-buttons">
+  <!-- Botón Like -->
+  <button
+    class="fab-button"
+    on:click={() => handleButtonClick('like')}
+    title="Like"
+  >
+    {#if isLiked}
+      <i class="fas fa-heart"></i>
+    {:else}
+      <i class="far fa-heart"></i>
+    {/if}
+  </button>
+
+  <!-- Indicador de likes (opcional), podría ser un simple badge -->
+  <div class="like-indicator">
+    <i class="fas fa-heart"></i>
+    <span>{likesCount}</span>
+  </div>
+
+  <!-- Botón Comments -->
+  <button
+    class="fab-button"
+    on:click={() => handleButtonClick('comments')}
+    title="Comentarios"
+    aria-label="Abrir comentarios"
+  >
+    <i class="fas fa-comments"></i>
+  </button>
+
+  <!-- Botón Rate -->
+  <button
+    class="fab-button"
+    on:click={() => handleButtonClick('rate')}
+    title="Calificar"
+    aria-label="Calificar artículo"
+  >
+    <i class="fas fa-star"></i>
+  </button>
+
+  <!-- Botón Toggle Dark Mode -->
+  <button
+    class="fab-button"
+    on:click={() => handleButtonClick('toggleDarkMode')}
+    title="Cambiar tema"
+  >
+    {#if isDarkMode}
+      <i class="fas fa-sun"></i>
+    {:else}
+      <i class="fas fa-moon"></i>
+    {/if}
+  </button>
+
+  <!-- Botón Scroll to top -->
+  <button
+    class="fab-button"
+    on:click={() => handleButtonClick('scrollToTop')}
+    title="Ir arriba"
+    aria-label="Volver al inicio de la página"
+  >
+    <i class="fas fa-arrow-up"></i>
+  </button>
+</div>
