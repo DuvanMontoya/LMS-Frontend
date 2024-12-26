@@ -319,7 +319,7 @@
         throw new Error('Debes iniciar sesión para comentar');
       }
       await apiService.postComment(articleId, content, token, parentId);
-      await loadInitialData();
+      // ... rest of the function ...
     } catch (error) {
       console.error('Error posting comment:', error);
     }

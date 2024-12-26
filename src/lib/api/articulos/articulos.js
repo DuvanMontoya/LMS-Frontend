@@ -142,12 +142,12 @@ export async function getComentariosUsuario(userId, authToken) {
 }
 
 export const postComment = (articleId, content, authToken, parentId = null) => {
-  const body = { motivo: content, padre: parentId }; // Asegurarse de enviar 'motivo' si es necesario
-  return fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken, {
-      method: 'POST',
-      body: body
-  });
-};
+    const body = { contenido: content, padre: parentId, articulo: articleId }; // Añade el campo articulo
+    return fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken, {
+        method: 'POST',
+        body: body
+    });
+  };
 
 export const requestArticleEnrollment = async (articleId, authToken, reason) => {
   try {
