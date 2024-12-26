@@ -1,135 +1,125 @@
+<!-- src/lib/components/articulo/FloatingButtons.svelte -->
 <script>
   import { createEventDispatcher } from 'svelte';
-
-  // Recibimos estos props para mostrar estado (no son callbacks):
   export let isLiked = false;
   export let likesCount = 0;
   export let isDarkMode = false;
+  export let isMobile = false;
+  export let isVertical = false;
 
-  // Creamos dispatcher para lanzar eventos
   const dispatch = createEventDispatcher();
 
-  /**
-   * Maneja el click en cada botón y emite el evento correspondiente
-   */
-  function handleButtonClick(action) {
-    if (action === 'like') {
-      dispatch('like');
-    } else if (action === 'comments') {
-      dispatch('comments');
-    } else if (action === 'rate') {
-      dispatch('rate');
-    } else if (action === 'toggleDarkMode') {
-      dispatch('toggleDarkMode');
-    } else if (action === 'scrollToTop') {
-      dispatch('scrollToTop');
-    }
+  function like() {
+    dispatch('like');
+  }
+
+  function comments() {
+    dispatch('comments');
+  }
+
+  function rate() {
+    dispatch('rate');
+  }
+
+  function toggleDark() {
+    dispatch('toggleDarkMode');
+  }
+
+  function scrollToTop() {
+    dispatch('scrollToTop');
+  }
+
+  function toggleTOC() {
+    dispatch('toggleToc');
   }
 </script>
+
+<div class="floating-buttons">
+  <button on:click={like} class="floating-button like-button" aria-label="Me gusta">
+    <i class={isLiked ? 'fas fa-heart liked' : 'far fa-heart'}></i>
+    {#if likesCount > 0}
+      <span class="count">{likesCount}</span>
+    {/if}
+  </button>
+  <button on:click={comments} class="floating-button comment-button" aria-label="Comentarios">
+    <i class="fas fa-comments"></i>
+  </button>
+  <button on:click={rate} class="floating-button rate-button" aria-label="Calificar">
+    <i class="fas fa-star"></i>
+  </button>
+  <button on:click={toggleDark} class="floating-button darkmode-button" aria-label="Toggle Dark Mode">
+    <i class={isDarkMode ? 'fas fa-sun' : 'fas fa-moon'}></i>
+  </button>
+  <button on:click={scrollToTop} class="floating-button scroll-top-button" aria-label="Scroll to Top">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+  {#if !isMobile && !isVertical}
+    <button on:click={toggleTOC} class="floating-button toc-button" aria-label="Abrir tabla de contenido">
+      <i class="fas fa-list"></i>
+    </button>
+  {/if}
+</div>
 
 <style>
   .floating-buttons {
     position: fixed;
-    bottom: 2rem;
-    right: 1rem;
+    bottom: 20px;
+    right: 20px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    z-index: 999;
+    z-index: 2000; /* Superior a la mayoría de los elementos */
   }
 
-  .fab-button {
-    background-color: var(--background-color2);
-    box-shadow: var(--box-shadow);
+  .floating-button {
+    width: 50px;
+    height: 50px;
+    background-color: var(--primary-color);
+    color: white;
     border: none;
     border-radius: 50%;
-    width: 52px;
-    height: 52px;
-    color: var(--text-color);
-    font-size: 1.25rem;
+    box-shadow: var(--box-shadow-elevated);
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+    position: relative;
+  }
+
+  .floating-button:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.1);
+  }
+
+  .floating-button i {
+    font-size: 1.2rem;
+  }
+
+  .floating-button.like-button .fas.fa-heart.liked {
+    color: #ff6b6b;
+  }
+
+  .floating-button .count {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background-color: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  /* Botón de TOC específico */
+  .toc-button {
+    background-color: var(--secondary-color);
     transition: background-color var(--transition-speed), transform var(--transition-speed);
   }
 
-  .fab-button:hover {
-    transform: translateY(-2px);
-    background-color: var(--background-elevated);
-  }
-
-  .like-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .like-indicator .fa-heart {
-    color: #e63946;
+  .toc-button:hover {
+    background-color: var(--secondary-dark);
+    transform: scale(1.05);
   }
 </style>
-
-<div class="floating-buttons">
-  <!-- Botón Like -->
-  <button
-    class="fab-button"
-    on:click={() => handleButtonClick('like')}
-    title="Like"
-  >
-    {#if isLiked}
-      <i class="fas fa-heart"></i>
-    {:else}
-      <i class="far fa-heart"></i>
-    {/if}
-  </button>
-
-  <!-- Indicador de likes (opcional), podría ser un simple badge -->
-  <div class="like-indicator">
-    <i class="fas fa-heart"></i>
-    <span>{likesCount}</span>
-  </div>
-
-  <!-- Botón Comments -->
-  <button
-    class="fab-button"
-    on:click={() => handleButtonClick('comments')}
-    title="Comentarios"
-    aria-label="Abrir comentarios"
-  >
-    <i class="fas fa-comments"></i>
-  </button>
-
-  <!-- Botón Rate -->
-  <button
-    class="fab-button"
-    on:click={() => handleButtonClick('rate')}
-    title="Calificar"
-    aria-label="Calificar artículo"
-  >
-    <i class="fas fa-star"></i>
-  </button>
-
-  <!-- Botón Toggle Dark Mode -->
-  <button
-    class="fab-button"
-    on:click={() => handleButtonClick('toggleDarkMode')}
-    title="Cambiar tema"
-  >
-    {#if isDarkMode}
-      <i class="fas fa-sun"></i>
-    {:else}
-      <i class="fas fa-moon"></i>
-    {/if}
-  </button>
-
-  <!-- Botón Scroll to top -->
-  <button
-    class="fab-button"
-    on:click={() => handleButtonClick('scrollToTop')}
-    title="Ir arriba"
-    aria-label="Volver al inicio de la página"
-  >
-    <i class="fas fa-arrow-up"></i>
-  </button>
-</div>

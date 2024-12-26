@@ -59,7 +59,8 @@ export async function fetchUserInfo(accessToken) {
       }
     });
     if (!response.ok) {
-      throw new Error('Error al obtener la información del usuario');
+      const errorText = await response.text(); // Try to get error details
+      throw new Error(`Error al obtener la información del usuario: Status ${response.status} - ${errorText}`);
     }
     const userData = await response.json();
     return userData;

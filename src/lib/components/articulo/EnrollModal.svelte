@@ -1,25 +1,24 @@
 <!-- src/lib/components/articulo/EnrollModal.svelte -->
 <script>
   import { fade, fly } from 'svelte/transition';
-  import { createEventDispatcher } from 'svelte';
-  
+  import { createEventDispatcher, onMount } from 'svelte';
+
   const dispatch = createEventDispatcher();
-  
+
   export let title = '';
-  export let onRequestEnrollment;
-  
+
   let reason = '';
   let isSubmitting = false;
   let maxLength = 500;
   let currentLength = 0;
   $: currentLength = reason.length;
-  
+
   async function handleSubmit() {
     if (!reason.trim() || isSubmitting) return;
-    
+
     try {
       isSubmitting = true;
-      await onRequestEnrollment(reason);
+      dispatch('requestEnrollment', { reason });
       dispatch('close');
     } catch (error) {
       console.error('Error submitting enrollment:', error);
@@ -27,17 +26,24 @@
       isSubmitting = false;
     }
   }
+
+  // Close modal on Escape key
+  function handleKeyDown(event) {
+    if (event.key === 'Escape') {
+      dispatch('close');
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  });
 </script>
 
-<button 
-  type="button"
-  class="modal-backdrop" 
-  on:click={() => dispatch('close')}
-  on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') dispatch('close') }}
-  aria-label="Close modal"
-  transition:fade={{ duration: 200 }}
->
-</button>
+<!-- Backdrop and Modal Container -->
+<div class="modal-overlay" transition:fade={{ duration: 200 }}>
   <form 
     class="modal-container"
     on:submit|preventDefault={handleSubmit}
@@ -48,11 +54,12 @@
   >
     <div class="modal-content">
       <header class="modal-header">
-        <h2>
+        <h2 id="modal-title">
           <i class="fas fa-key"></i>
           Solicitar Acceso
         </h2>
         <button 
+          type="button"
           class="close-button"
           on:click={() => dispatch('close')}
           aria-label="Cerrar"
@@ -67,7 +74,6 @@
           <div class="info-text">
             <h3>"{title}"</h3>
             <p>Este es un artículo de acceso restringido. Por favor, explica por qué estás interesado en acceder a este contenido.</p>
-          <!-- Removed extra closing div -->
           </div>
         </div>
 
@@ -81,6 +87,7 @@
               rows="5"
               placeholder="Describe brevemente tu interés en este contenido..."
               disabled={isSubmitting}
+              required
             ></textarea>
             <div class="char-counter {currentLength > maxLength * 0.9 ? 'near-limit' : ''}">
               {currentLength}/{maxLength}
@@ -103,6 +110,7 @@
 
       <footer class="modal-footer">
         <button 
+          type="button"
           class="cancel-button"
           on:click={() => dispatch('close')}
           disabled={isSubmitting}
@@ -111,8 +119,8 @@
         </button>
         
         <button
+          type="submit"
           class="submit-button"
-          on:click={handleSubmit}
           disabled={!reason.trim() || isSubmitting}
         >
           {#if isSubmitting}
@@ -126,21 +134,21 @@
       </footer>
     </div>
   </form>
+</div>
 
 <style>
-  .modal-backdrop {
+  .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background-color: var(--modal-overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
-    z-index: 2000;
+    z-index: var(--modal-z-index); /* Superior a otros elementos */
   }
 
   .modal-container {
@@ -173,7 +181,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l7.9-7.9h-.828zm5.656 0L19.515 8.485 17.343 10.657 28 0h-2.83zM32.656 0L41.142 8.485 39.728 9.9l-7.9-7.9h.828zm5.656 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zm5.657 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zM2.828 0L0 2.828v2.83L5.657 0H2.828zM54.627 60l.83-.828-1.415-1.415L51.8 60h2.827zM5.373 60l-.83-.828L5.96 57.757 8.2 60H5.374zM48.97 60l3.657-3.657-1.414-1.414L46.143 60h2.828zM11.03 60L7.372 56.343 8.787 54.93 13.857 60H11.03zm32.284 0L49.8 53.515l-1.414-1.414-7.9 7.9h2.83zM16.686 60L10.2 53.515l1.414-1.414 7.9 7.9h-2.83zM22.344 60L13.858 51.515l1.414-1.414 7.9 7.9h-.828zm5.656 0l-8.485-8.485-2.172-2.172L28 60h-2.83zM32.656 60l8.486-8.485-1.414-1.414-7.9 7.9h.828zm5.656 0l8.485-8.485-1.414-1.414-7.9 7.9h.83zm5.657 0l8.485-8.485-1.414-1.414-7.9 7.9h.83zM2.828 60L0 57.172v-2.83L5.657 60H2.828z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E") center/60px;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l7.9-7.9h-.828zm5.656 0L19.515 8.485 17.343 10.657 28 0h-2.83zM32.656 0L41.142 8.485 39.728 9.9l-7.9-7.9h.828zm5.656 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zm5.657 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zM2.828 0L0 2.828v2.83L5.657 0H2.828zM54.627 60l.83-.828-1.415-1.415L51.8 60h2.827zM5.373 60l-.83-.828L5.96 57.757 8.2 60H5.374zM48.97 60l3.657-3.657-1.414-1.414L46.143 60h2.828zM11.03 60L7.372 56.343 8.787 54.93 13.857 60H11.03zm32.284 60L49.8 53.515l-1.414-1.414-7.9 7.9h2.83zM16.686 60L10.2 53.515l1.414-1.414 7.9 7.9h-2.83zM22.344 60L13.858 51.515l1.414-1.414 7.9 7.9h-.828zm5.656 60l-8.485-8.485-2.172-2.172L28 60h-2.83zM32.656 60l8.486-8.485-1.414-1.414-7.9 7.9h.828zm5.656 60l8.485-8.485-1.414-1.414-7.9 7.9h.83zM5.657 60l0-5.657L5.657 60z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E") center/60px;
     opacity: 0.5;
   }
 
@@ -392,19 +400,12 @@
     cursor: not-allowed;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 640px), (max-height: 900px) and (min-width: 1200px) {
     .modal-container {
       height: 100%;
       max-height: 100%;
       border-radius: 0;
     } 
-  }
-
-  .modal-container {
-      height: 100%;
-      max-height: none;
-      border-radius: 0;
-    }
 
     .modal-content {
       height: 100%;
@@ -419,4 +420,5 @@
       width: 100%;
       justify-content: center;
     }
+  }
 </style>

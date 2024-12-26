@@ -32,15 +32,17 @@
     }
 </script>
 
-<dialog
+<div
     class="modal-backdrop"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
     on:click={handleClose}
     on:keydown={(e) => e.key === 'Escape' && handleClose()}
-    open
-    transition:fade
->
-    <article
+    >
+    <div
         class="modal-content"
+        role="document"
         on:click|stopPropagation
     >
         <h2>{event.id ? "Editar Evento" : "Nuevo Evento"}</h2>
@@ -74,13 +76,10 @@
             <div class="button-group">
                 <button type="submit">Guardar</button>
                 <button type="button" on:click={handleClose}>Cancelar</button>
-            <div class="button-group">
-                <button type="submit">Guardar</button>
-                <button type="button" on:click={handleClose}>Cancelar</button>
             </div>
         </form>
-    </article>
-</dialog>
+    </div>
+</div>
 
 <style>
     .modal-backdrop {

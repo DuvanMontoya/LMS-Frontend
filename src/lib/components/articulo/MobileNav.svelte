@@ -1,88 +1,104 @@
 <!-- src/lib/components/articulo/MobileNav.svelte -->
 <script>
-  import { createEventDispatcher } from 'svelte';
-
-  const dispatch = createEventDispatcher();
-
   export let isLiked = false;
   export let likesCount = 0;
   export let isDarkMode = false;
 
-  function handleLike() {
+  import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
+
+  function like() {
     dispatch('like');
   }
 
-  function handleComments() {
+  function comments() {
     dispatch('comments');
   }
 
-  function handleRate() {
+  function rate() {
     dispatch('rate');
   }
 
-  function handleToggleDarkMode() {
+  function toggleDark() {
     dispatch('toggleDarkMode');
   }
 
-  function handleScrollToTop() {
+  function scrollToTop() {
     dispatch('scrollToTop');
   }
 
-  function handleToggleToc() {
+  function toggleToc() {
     dispatch('toggleToc');
   }
 </script>
 
-<nav class="mobile-nav">
-  <button on:click={handleToggleToc} aria-label="Abrir tabla de contenido">
-    <i class="fas fa-list"></i>
-  </button>
-  <button on:click={handleLike} aria-label="Me gusta">
+<div class="mobile-nav">
+  <button on:click={like} class="nav-button like-button" aria-label="Me gusta">
     <i class={isLiked ? 'fas fa-heart liked' : 'far fa-heart'}></i>
-    <span>{likesCount}</span>
+    {#if likesCount > 0}
+      <span class="count">{likesCount}</span>
+    {/if}
   </button>
-  <button on:click={handleComments} aria-label="Comentarios">
+  <button on:click={comments} class="nav-button comment-button" aria-label="Comentarios">
     <i class="fas fa-comments"></i>
   </button>
-  <button on:click={handleRate} aria-label="Calificar">
+  <button on:click={rate} class="nav-button rate-button" aria-label="Calificar">
     <i class="fas fa-star"></i>
   </button>
-  <button on:click={handleToggleDarkMode} aria-label="Toggle Dark Mode">
+  <button on:click={toggleDark} class="nav-button darkmode-button" aria-label="Toggle Dark Mode">
     <i class={isDarkMode ? 'fas fa-sun' : 'fas fa-moon'}></i>
   </button>
-  <button on:click={handleScrollToTop} aria-label="Scroll to Top">
+  <button on:click={scrollToTop} class="nav-button scroll-top-button" aria-label="Scroll to Top">
     <i class="fas fa-arrow-up"></i>
   </button>
-</nav>
+  <button on:click={toggleToc} class="nav-button toc-button" aria-label="Abrir tabla de contenido">
+    <i class="fas fa-list"></i>
+  </button>
+</div>
 
 <style>
   .mobile-nav {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background-color: var(--background-color2);
-    border-radius: 50px;
-    box-shadow: var(--box-shadow-elevated);
     display: flex;
-    gap: 1rem;
-    padding: 0.5rem 1rem;
-    z-index: 3000;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0.5rem 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 2000;
   }
 
-  .mobile-nav button {
+  .nav-button {
     background: none;
     border: none;
     color: var(--text-color);
     font-size: 1.2rem;
+    position: relative;
     cursor: pointer;
-    transition: color var(--transition-speed);
+    transition: color var(--transition-speed), transform var(--transition-speed);
   }
 
-  .mobile-nav button:hover {
+  .nav-button:hover {
     color: var(--primary-color);
+    transform: scale(1.1);
   }
 
-  .mobile-nav .liked {
-    color: var(--secondary-color);
+  .nav-button .fas.fa-heart.liked {
+    color: #ff6b6b;
+  }
+
+  .nav-button .count {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background-color: #ff6b6b;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    font-weight: bold;
   }
 </style>

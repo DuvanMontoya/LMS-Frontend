@@ -6,6 +6,7 @@
   import { sessionStore } from '$lib/stores/sessionStore';
   import { Howl } from 'howler';
 
+
   /* Servicios de API */
   import apiService from '$lib/api/articulos/articulos.js';
 
@@ -13,7 +14,7 @@
   import ArticleHeader from '$lib/components/articulo/ArticleHeader.svelte';
   import TableOfContents from '$lib/components/articulo/TableOfContents.svelte';
   import EnrolledArticle from '$lib/components/articulo/EnrolledArticle.svelte';
-  import RestrictedArticle from '$lib/components/articulo/RestrictedArticle.svelte';
+  import ArticlePreview from '$lib/components/articulo/ArticlePreview.svelte';
   import FloatingButtons from '$lib/components/articulo/FloatingButtons.svelte';
   import MobileNav from '$lib/components/articulo/MobileNav.svelte';
   import CommentsPanel from '$lib/components/articulo/CommentsPanel.svelte';
@@ -32,6 +33,7 @@
   let readingProgress = 0;
   let lastScrollY = 0;
   let isHeaderVisible = true;
+  let isTitleProgressVisible = false;
 
   // Interacciones
   let isLiked = false;
@@ -44,6 +46,7 @@
   // UI
   let isDarkMode = false;
   let isMobile = false;
+  let isVertical = false;
   let showTocMobile = false;
 
   // Matrícula
@@ -57,14 +60,14 @@
   // Listener de scroll
   function handleScroll() {
     const currentScrollY = window.scrollY;
-    isHeaderVisible = currentScrollY <= lastScrollY || currentScrollY < 100;
+    const scrollingDown = currentScrollY > lastScrollY;
+    isHeaderVisible = !scrollingDown || currentScrollY < 100;
+    isTitleProgressVisible = !scrollingDown && currentScrollY > 100;
     lastScrollY = currentScrollY;
 
     // Progreso de lectura
     const winScroll = document.documentElement.scrollTop;
-    const height =
-      document.documentElement.scrollHeight -
-      document.documentElement.clientHeight;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
     readingProgress = (winScroll / height) * 100;
 
     // Sección activa
@@ -72,11 +75,22 @@
   }
 
   onMount(() => {
-    // Detectar si es mobile
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-    isMobile = mediaQuery.matches;
-    const mediaQueryListener = (e) => (isMobile = e.matches);
-    mediaQuery.addEventListener('change', mediaQueryListener);
+    // Detectar si es mobile o vertical
+    const mediaQueryMobile = window.matchMedia('(max-width: 768px)');
+    const mediaQueryVertical = window.matchMedia('(max-height: 900px) and (min-width: 1200px)');
+    isMobile = mediaQueryMobile.matches;
+    isVertical = mediaQueryVertical.matches;
+
+    const mediaQueryMobileListener = (e) => {
+      isMobile = e.matches;
+    };
+
+    const mediaQueryVerticalListener = (e) => {
+      isVertical = e.matches;
+    };
+
+    mediaQueryMobile.addEventListener('change', mediaQueryMobileListener);
+    mediaQueryVertical.addEventListener('change', mediaQueryVerticalListener);
 
     // Revisar tema previo
     const storedTheme = localStorage.getItem('darkMode');
@@ -93,7 +107,8 @@
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      mediaQuery.removeEventListener('change', mediaQueryListener);
+      mediaQueryMobile.removeEventListener('change', mediaQueryMobileListener);
+      mediaQueryVertical.removeEventListener('change', mediaQueryVerticalListener);
     };
   });
 
@@ -221,14 +236,12 @@
     let current = '';
     for (const section of sections) {
       const rect = section.getBoundingClientRect();
-      if (rect.top <= 100) {
+      if (rect.top <= window.innerHeight / 2) { // Mantener la sección en la mitad
         current = section.id;
       }
     }
     if (current !== activeSection) {
       activeSection = current;
-      // Emitir evento o llamar función para scroll en TOC
-      // Aquí asumimos que el TOC manejará el scroll automáticamente
     }
   }
 
@@ -236,7 +249,7 @@
     const element = document.getElementById(id);
     if (!element) return;
 
-    const offset = isMobile ? 60 : 80; // Ajuste según el tamaño del header
+    const offset = isMobile || isVertical ? 60 : 80; // Ajuste según el tamaño del header
     const elementPosition = element.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -279,7 +292,7 @@
       bottom: 50px;
       right: 50px;
       pointer-events: none;
-      z-index: 2000; /* Asegurar que esté por encima de otros elementos */
+      z-index: 2000;
     `;
     for (let i = 0; i < 5; i++) {
       const heart = document.createElement('i');
@@ -386,17 +399,23 @@
 
 <!-- CONTENEDOR PRINCIPAL -->
 <main class="article-page theme-transition {isDarkMode ? 'dark-mode' : ''} {isLoading ? 'loading' : ''}">
-  <!-- Barra de progreso -->
-  <div class="reading-progress" style="width: {readingProgress}%"></div>
+  <!-- Barra de progreso superior -->
+  {#if isHeaderVisible}
+    <div class="reading-progress" style="width: {readingProgress}%"></div>
+  {/if}
 
-  <!-- Header fijo (solo desktop) -->
-  {#if isHeaderVisible && !isMobile}
+  <!-- Barra de progreso en el título -->
+  {#if isTitleProgressVisible}
+    <div class="title-progress">
+      <div class="progress-bar" style="width: {readingProgress}%"></div>
+    </div>
+  {/if}
+
+  <!-- Header fijo (solo desktop y no vertical) -->
+  {#if isHeaderVisible && !isMobile && !isVertical}
     <div class="sticky-header">
       <div class="header-content">
         <h1 class="header-title">{article?.titulo || 'Cargando...'}</h1>
-        <div class="header-progress">
-          <div class="progress-bar" style="width: {readingProgress}%"></div>
-        </div>
       </div>
     </div>
   {/if}
@@ -415,7 +434,7 @@
 
     <!-- LAYOUT: Grid con 2 columnas: TOC + contenido -->
     <div class="article-layout">
-      {#if !isMobile && toc.length}
+      {#if (!isMobile && !isVertical) && toc.length}
         <div class="toc-wrapper">
           <TableOfContents
             toc={toc}
@@ -451,10 +470,10 @@
               archivo_adjunto={article.archivo_adjunto}
             />
           {:else}
-            <RestrictedArticle
+            <ArticlePreview
               preview_html={article.preview_html}
               title={article.titulo}
-              onRequestEnrollment={() => (showEnrollModal = true)}
+              on:requestEnrollment={() => (showEnrollModal = true)}
             />
           {/if}
         {/if}
@@ -463,40 +482,43 @@
   </div>
 
   <!-- Navegación MÓVIL vs Botones flotantes DESKTOP -->
-  {#if isMobile}
-    <MobileNav
-      isLiked={isLiked}
-      likesCount={likesCount}
-      on:like={handleLikeClick}    
-      on:comments={openComments}
-      on:rate={() => {
-        showBottomSheet = true;
-        activeBottomSheetContent = 'rating';
-      }}
-      on:toggleDarkMode={toggleDarkMode}
-      on:scrollToTop={scrollToTop}
-      isDarkMode={isDarkMode}
-      on:toggleToc={toggleTocMobile}
-    />
-  {:else}
-    <!-- Capturamos eventos emitidos por FloatingButtons -->
-    <FloatingButtons
-      isLiked={isLiked}
-      likesCount={likesCount}
-      isDarkMode={isDarkMode}
-      on:like={handleLikeClick}
-      on:comments={openComments}
-      on:rate={() => {
-        showBottomSheet = true;
-        activeBottomSheetContent = 'rating';
-      }}
-      on:toggleDarkMode={toggleDarkMode}
-      on:scrollToTop={scrollToTop}
-    />
+  {#if isEnrolled}
+    {#if isMobile || isVertical}
+      <MobileNav
+        isLiked={isLiked}
+        likesCount={likesCount}
+        on:like={handleLikeClick}    
+        on:comments={openComments}
+        on:rate={() => {
+          showBottomSheet = true;
+          activeBottomSheetContent = 'rating';
+        }}
+        on:toggleDarkMode={toggleDarkMode}
+        on:scrollToTop={scrollToTop}
+        isDarkMode={isDarkMode}
+        on:toggleToc={toggleTocMobile}
+      />
+    {:else}
+      <!-- Capturamos eventos emitidos por FloatingButtons -->
+      <FloatingButtons
+        isLiked={isLiked}
+        likesCount={likesCount}
+        isDarkMode={isDarkMode}
+        on:like={handleLikeClick}
+        on:comments={openComments}
+        on:rate={() => {
+          showBottomSheet = true;
+          activeBottomSheetContent = 'rating';
+        }}
+        on:toggleDarkMode={toggleDarkMode}
+        on:scrollToTop={scrollToTop}
+        on:toggleToc={toggleTocMobile}
+      />
+    {/if}
   {/if}
 
   <!-- Panel de comentarios -->
-  {#if showComments}
+  {#if showComments && isEnrolled}
     <CommentsPanel
       comments={comments}
       onPostComment={handleComment}
@@ -524,17 +546,15 @@
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}
-    <div class="modal-overlay">
-      <EnrollModal
-        title={article?.titulo}
-        on:requestEnrollment={handleEnrollment}
-        on:close={() => (showEnrollModal = false)}
-      />
-    </div>
+    <EnrollModal
+      title={article?.titulo}
+      on:requestEnrollment={handleEnrollment}
+      on:close={() => (showEnrollModal = false)}
+    />
   {/if}
 
-  <!-- TOC en móvil -->
-  {#if isMobile && showTocMobile && toc.length}
+  <!-- TOC en móvil y vertical -->
+  {#if (isMobile || isVertical) && showTocMobile && toc.length}
     <div class="modal-overlay">
       <TableOfContents
         toc={toc}
@@ -571,6 +591,7 @@
     --transition-speed: 0.3s;
     --modal-overlay-bg: rgba(0, 0, 0, 0.5);
     --modal-z-index: 2500; /* Mayor que otros elementos */
+    --header-gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   }
 
   :root.dark {
@@ -615,6 +636,22 @@
     transition: width 0.2s ease-out;
   }
 
+  .title-progress {
+    position: fixed;
+    top: 60px; /* Ajustar según el tamaño del header */
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: rgba(var(--text-rgb), 0.1);
+    z-index: 2500; /* Superior a la TOC pero inferior a modales */
+  }
+
+  .title-progress .progress-bar {
+    height: 100%;
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+    transition: width 0.2s ease-out;
+  }
+
   .sticky-header {
     position: fixed;
     top: 0;
@@ -640,20 +677,6 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .header-progress {
-    height: 3px;
-    background-color: rgba(var(--text-rgb), 0.1);
-    margin-top: 0.5rem;
-    border-radius: 1px;
-    overflow: hidden;
-  }
-
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-    transition: width 0.2s ease-out;
   }
 
   .article-container {
@@ -824,7 +847,7 @@
     }
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 768px), (max-height: 900px) and (min-width: 1200px) {
     .article-container {
       padding: 1rem;
       padding-top: 3rem; /* Ajuste para header móvil */
@@ -842,7 +865,7 @@
     }
 
     .toc-wrapper {
-      display: none; /* Ocultar TOC en desktop cuando es móvil */
+      display: none; /* Ocultar TOC en desktop cuando es móvil o vertical */
     }
   }
 
@@ -873,6 +896,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 1rem;
     z-index: var(--modal-z-index); /* Superior a otros elementos */
     animation: fadeIn 0.3s ease;
   }
@@ -884,5 +908,67 @@
     to {
       opacity: 1;
     }
+  }
+
+  /* Evitar que la opacidad afecte al contenido del modal */
+  .modal-overlay > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Mejoras adicionales */
+  /* Scrollbar personalizado para TOC */
+  .toc-wrapper::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .toc-wrapper::-webkit-scrollbar-track {
+    background: var(--background-color2);
+  }
+
+  .toc-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 4px;
+    border: 2px solid var(--background-color2);
+  }
+
+  /* Scrollbar personalizado para modal TOC */
+  .table-of-contents.mobile .toc-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .table-of-contents.mobile .toc-content::-webkit-scrollbar-track {
+    background: var(--background-color2);
+  }
+
+  .table-of-contents.mobile .toc-content::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 3px;
+    border: 2px solid var(--background-color2);
+  }
+
+  /* Botón para abrir TOC en móviles y vertical screens */
+  .open-toc-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--box-shadow-elevated);
+    z-index: 2001; /* Superior a otros elementos */
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+  }
+
+  .open-toc-button:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.05);
   }
 </style>

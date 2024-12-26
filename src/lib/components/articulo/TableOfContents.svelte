@@ -234,7 +234,7 @@
     max-width: 350px;
     height: 100vh;
     margin: 0;
-    z-index: 2000; /* Superior a la TOC en desktop */
+    z-index: 1000; /* Superior a la TOC en desktop */
     border-radius: 0;
     box-shadow: var(--box-shadow-elevated);
     animation: slideIn 0.3s ease;
