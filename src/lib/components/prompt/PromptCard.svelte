@@ -10,7 +10,14 @@
   }
 </script>
 
-<div class="prompt-card" on:click={onClick}>
+<div
+  class="prompt-card"
+  on:click={onClick}
+  on:keydown={(e) => e.key === 'Enter' && onClick()}
+  role="button"
+  tabindex="0"
+  aria-label="Ver detalles del prompt {prompt.titulo}"
+>
   <div class="prompt-content">
     <h2>{prompt.titulo}</h2>
     <p class="description">{prompt.descripcion}</p>
@@ -34,6 +41,7 @@
       on:click|stopPropagation={() => onEdit(prompt)}
       class="edit-btn"
       title="Editar"
+      aria-label="Editar prompt {prompt.titulo}"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -54,6 +62,7 @@
       on:click|stopPropagation={() => onDelete(prompt.id)}
       class="delete-btn"
       title="Eliminar"
+      aria-label="Eliminar prompt {prompt.titulo}"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -110,6 +119,7 @@
     margin-bottom: 0.5rem;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }

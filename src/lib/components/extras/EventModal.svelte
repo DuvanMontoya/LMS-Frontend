@@ -32,8 +32,17 @@
     }
 </script>
 
-<div class="modal-backdrop" on:click={handleClose} transition:fade>
-    <div class="modal-content" on:click|stopPropagation>
+<dialog
+    class="modal-backdrop"
+    on:click={handleClose}
+    on:keydown={(e) => e.key === 'Escape' && handleClose()}
+    open
+    transition:fade
+>
+    <article
+        class="modal-content"
+        on:click|stopPropagation
+    >
         <h2>{event.id ? "Editar Evento" : "Nuevo Evento"}</h2>
         <form on:submit|preventDefault={handleSubmit}>
             <label>
@@ -65,10 +74,13 @@
             <div class="button-group">
                 <button type="submit">Guardar</button>
                 <button type="button" on:click={handleClose}>Cancelar</button>
+            <div class="button-group">
+                <button type="submit">Guardar</button>
+                <button type="button" on:click={handleClose}>Cancelar</button>
             </div>
         </form>
-    </div>
-</div>
+    </article>
+</dialog>
 
 <style>
     .modal-backdrop {

@@ -112,13 +112,17 @@
       <div class="video-container">
         {#if videoLoading}
           <div class="loading-overlay" aria-live="polite">
-            <FontAwesomeIcon icon={faSpinner} spin class="icono-spinner" />
+            <div class="icono-spinner">
+              <FontAwesomeIcon icon={faSpinner} spin />
+            </div>
             <span>Cargando video...</span>
           </div>
         {/if}
         {#if videoError}
           <div class="error-overlay" aria-live="assertive">
-            <FontAwesomeIcon icon={faExclamationTriangle} class="icono-error" />
+            <div class="icono-error">
+              <FontAwesomeIcon icon={faExclamationTriangle} />
+            </div>
             <p>Se produjo un error al cargar el video. Por favor, inténtalo de nuevo más tarde.</p>
             <button class="btn-reintentar" on:click={updateVideo} aria-label="Reintentar cargar el video">
               <FontAwesomeIcon icon={faRedo} /> Reintentar

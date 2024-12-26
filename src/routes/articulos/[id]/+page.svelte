@@ -853,9 +853,6 @@
     .article-content-wrapper {
       padding: 1rem;
     }
-    .enrollment-section {
-      padding: 1rem;
-    }
   }
 
   /*****************************************************/

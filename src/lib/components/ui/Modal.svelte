@@ -9,9 +9,9 @@
   }
 </script>
 
-<div class="modal-backdrop" on:click={close} on:keydown={close} role="presentation">
+<div class="modal-backdrop" role="button" tabindex="0" on:click={close} on:keydown={close} aria-label="Close modal">
   <dialog class="modal-content" open>
-    <div class="modal-inner" on:click|stopPropagation role="dialog" tabindex="-1">
+    <div class="modal-inner" role="dialog" on:click|stopPropagation on:keydown|stopPropagation aria-label="Contenido del modal">
       <button class="close-btn" on:click={close} aria-label="Cerrar modal">&times;</button>
       <slot></slot>
     </div>

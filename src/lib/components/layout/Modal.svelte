@@ -8,7 +8,7 @@
     };
   </script>
   
-  <div class="modal-backdrop" on:click={close}></div>
+  <button class="modal-backdrop" on:click={close} on:keydown={e => e.key === 'Escape' && close()} type="button" aria-label="Close modal"></button>
   <div class="modal">
     <div class="modal-content">
       <slot></slot>

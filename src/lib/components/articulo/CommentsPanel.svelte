@@ -81,6 +81,7 @@
 <div
   class="comments-overlay"
   on:click={onClose}
+  on:keydown={(e) => e.key === 'Enter' && onClose()}
   role="button"
   tabindex="0"
   aria-label="Cerrar comentarios"

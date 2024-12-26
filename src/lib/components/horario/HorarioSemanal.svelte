@@ -65,6 +65,9 @@
                 class="evento"
                 style="background-color: {evento.color}"
                 on:click={() => handleEventoClick(evento)}
+                on:keydown={(e) => e.key === 'Enter' && handleEventoClick(evento)}
+                role="button"
+                tabindex="0"
               >
                 {evento.titulo}
               </div>

@@ -35,10 +35,30 @@
     }
 </script>
 
-<div class="modal-overlay" on:click={onClose}>
-    <div class="modal-content" on:click|stopPropagation>
-        <h2>{prompt.titulo}</h2>
-        <p class="description">{prompt.descripcion}</p>
+<!-- Botón de cierre del modal -->
+<div
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    aria-labelledby="modal-title"
+    aria-describedby="modal-description"
+>
+    <button
+        type="button"
+        class="modal-overlay-button"
+        on:click={onClose}
+        on:keydown={(e) => e.key === 'Enter' && onClose()}
+    >
+        <span class="sr-only">Close modal</span>
+    </button>
+    <div
+        class="modal-content"
+        role="document"
+    >
+        <h2 id="modal-title">{prompt.titulo}</h2>
+        <p id="modal-description" class="description">{prompt.descripcion}</p>
+
         <div class="metadata">
             <p class="ai-model">Modelo de IA: {prompt.modelo_ia_display}</p>
             <p class="category">
@@ -47,19 +67,23 @@
                     : "Sin categoría"}
             </p>
             <p class="date">Creado: {formatDate(prompt.fecha_creacion)}</p>
-            <p class="date">
-                Última actualización: {formatDate(prompt.fecha_actualizacion)}
-            </p>
+            <p class="date">Última actualización: {formatDate(prompt.fecha_actualizacion)}</p>
         </div>
+
         <div class="tags">
             {#each prompt.etiquetas as etiqueta}
                 <span class="tag">{etiqueta.nombre}</span>
             {/each}
         </div>
+
         <div class="content-container">
             <h3>Contenido del Prompt:</h3>
             <pre>{prompt.contenido}</pre>
-            <button class="copy-btn" on:click={copyToClipboard} class:copied>
+            <button
+                class="copy-btn {copied ? 'copied' : ''}"
+                on:click={copyToClipboard}
+                aria-label="Copiar contenido"
+            >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -69,39 +93,41 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                 >
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"
-                    ></rect>
-                    <path
-                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                    ></path>
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
                 {copied ? "¡Copiado!" : "Copiar Contenido"}
             </button>
         </div>
+
         <button
             class="history-btn"
             on:click={() => (showHistory = !showHistory)}
+            aria-label="Mostrar u ocultar historial"
         >
             {showHistory ? "Ocultar Historial" : "Mostrar Historial"}
         </button>
+
         {#if showHistory}
             <div class="history-container">
                 <h3>Historial de Versiones:</h3>
                 {#each prompt.historial as version}
                     <div class="version">
                         <p>
-                            Versión {version.version} - {formatDate(
-                                version.fecha_modificacion,
-                            )}
+                            Versión {version.version} - {formatDate(version.fecha_modificacion)}
                         </p>
                         <p>Modificado por: {version.modificado_por}</p>
                     </div>
                 {/each}
             </div>
         {/if}
-        <button class="close-btn" on:click={onClose}>Cerrar</button>
+
+        <button class="close-btn" on:click={onClose} aria-label="Cerrar modal">
+            Cerrar
+        </button>
     </div>
 </div>
+
 
 <style>
     .modal-overlay {

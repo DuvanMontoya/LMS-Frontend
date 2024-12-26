@@ -165,11 +165,14 @@
   </main>
 
   {#if isMobile && isSidebarOpen}
-    <div
+    <button
+      type="button"
       class="overlay"
       on:click={toggleSidebar}
+      on:keydown={(e) => e.key === 'Escape' && toggleSidebar()}
+      aria-label="Cerrar menú lateral"
       transition:fade={{ duration: 200 }}
-    ></div>
+    ></button>
   {/if}
 </div>
 

@@ -101,7 +101,7 @@
       overflow: hidden;
     }
   
-    .curso-image, .placeholder-image {
+    .curso-image {
       width: 100%;
       height: 100%;
       background-size: cover;
@@ -109,17 +109,7 @@
       transition: transform 0.3s ease;
     }
   
-    .placeholder-image {
-      background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 3rem;
-      color: #9ca3af;
-    }
-  
-    .curso-card:hover .curso-image,
-    .curso-card:hover .placeholder-image {
+    .curso-card:hover .curso-image {
       transform: scale(1.05);
     }
   
@@ -162,6 +152,7 @@
       line-height: 1.3;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }

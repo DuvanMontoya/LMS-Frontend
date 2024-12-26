@@ -11,7 +11,6 @@
   };
   export let categorias = [];
   export let etiquetas = [];
-  export let onSubmit;
   export let onCancel;
   export let isEditing = false;
 
@@ -90,8 +89,8 @@
   </div>
 
   <div class="form-group">
-    <label>Etiquetas</label>
-    <div class="etiquetas-container">
+    <label for="etiquetas-group">Etiquetas</label>
+    <div id="etiquetas-group" class="etiquetas-container">
       {#each etiquetas as etiqueta}
         <label class="etiqueta-checkbox">
           <input

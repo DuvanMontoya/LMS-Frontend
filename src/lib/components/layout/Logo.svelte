@@ -16,6 +16,7 @@
       font-size: 2.2rem;
       color: #0D47A1;
       background: linear-gradient(90deg, #0c0649, #020118);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       transition: transform 0.3s, box-shadow 0.3s;

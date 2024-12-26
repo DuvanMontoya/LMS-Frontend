@@ -41,7 +41,9 @@
     </header>
     {#if leccion.tipo_leccion === 'Video'}
       <div class="video-container">
-        <video src="{leccion.contenido_multimedia}" controls></video>
+        <video src="{leccion.contenido_multimedia}" controls aria-label="Video de la lección">
+          <track kind="captions" src={leccion.subtitulos || ''} label="Spanish captions" />
+        </video>
       </div>
     {:else if leccion.tipo_leccion === 'Texto'}
       <div class="contenido-texto" innerHTML={leccion.contenido_texto}></div>

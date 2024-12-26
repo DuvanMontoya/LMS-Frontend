@@ -4,10 +4,10 @@
 </script>
 
 {#if show}
-<div class="modal-backdrop" on:click|self={() => show = false} transition:fade={{duration: 200}}>
-    <div class="modal-content" on:click|stopPropagation>
+<div class="modal-backdrop" role="button" tabindex="0" on:click|self={() => show = false} on:keydown|self={(e) => e.key === 'Escape' && (show = false)} transition:fade={{duration: 200}}>
+    <dialog class="modal-content" on:click|stopPropagation on:keydown|stopPropagation>
         <slot></slot>
-    </div>
+    </dialog>
 </div>
 {/if}
 

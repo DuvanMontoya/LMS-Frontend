@@ -85,7 +85,10 @@
   
   <div class="curso-estudiar">
     {#if cargando}
-      <div class="loading">Cargando...</div>
+      <div class="loading">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+      </div>
     {:else if error}
       <div class="error">{error}</div>
     {:else}    
@@ -204,7 +207,7 @@
     }
   
     /* Estilos adicionales para botones y enlaces */
-    button {
+    :global(button) {
       background-color: #e74c3c;
       color: white;
       border: none;
@@ -215,20 +218,11 @@
       transition: background-color 0.3s, transform 0.3s;
     }
   
-    button:hover {
+    :global(button:hover) {
       background-color: #c0392b;
       transform: scale(1.05);
     }
   
-    a {
-      color: #3498db;
-      text-decoration: none;
-      transition: color 0.3s;
-    }
-  
-    a:hover {
-      color: #2980b9;
-    }
   
     /* Añadir animaciones de entrada */
     @keyframes fadeIn {
