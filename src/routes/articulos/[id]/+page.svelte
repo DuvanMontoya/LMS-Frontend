@@ -77,11 +77,11 @@
     };
   });
 
-  // Cuando abres el bottom sheet:
-function openBottomSheet(content) {
-  activeBottomSheetContent = content;
-  showBottomSheet = true;
-}
+  // Función para abrir el bottom sheet
+  function openBottomSheet(content) {
+    activeBottomSheetContent = content;
+    showBottomSheet = true;
+  }
 
   /**
    * Carga la info del artículo y estados asociados (matrícula, likes, etc.)
@@ -244,6 +244,8 @@ function openBottomSheet(content) {
   }
 
   /** Interacciones */
+
+  // Manejar "Me gusta" en el artículo
   async function handleLikeClick() {
     try {
       const token = get(sessionStore).access;
@@ -288,30 +290,46 @@ function openBottomSheet(content) {
     sound.play();
   }
 
-async function handleComment(content) {
-  try {
-    const token = $sessionStore?.access;
-    if (!token) {
-      throw new Error('Debes iniciar sesión para comentar');
+  /** Manejar comentarios */
+  async function handleComment(content, parentId = null) {
+    try {
+      const token = get(sessionStore).access;
+      if (!token) {
+        throw new Error('Debes iniciar sesión para comentar');
+      }
+      // await apiService.postComment(articleId, content, parentId, token);
+      await apiService.postComment(articleId, content, token, parentId); // Ahora pasamos parentId
+      await loadInitialData();
+    } catch (error) {
+      console.error('Error posting comment:', error);
     }
-    await apiService.postComment(articleId, content, token);
-    await loadInitialData();
-  } catch (error) {
-    console.error('Error posting comment:', error);
   }
-}
+
+  /** Manejar "Me gusta" en comentarios */
+  async function handleLikeComment(commentId) {
+    try {
+      const token = get(sessionStore).access;
+      if (!token) {
+        throw new Error('No se proporcionó un token de autenticación');
+      }
+      await apiService.likeComment(commentId, token);
+      await loadInitialData();
+    } catch (error) {
+      console.error('Error liking comment:', error);
+    }
+  }
 
   async function handleRating(rating) {
-  try {
-    const token = $sessionStore.access;
-    if (!token) throw new Error('No auth token');
-    
-    await apiService.rateArticle(articleId, rating, token);
-    showBottomSheet = false;
-  } catch (error) {
-    console.error('Error al calificar:', error);
+    try {
+      const token = get(sessionStore).access;
+      if (!token) throw new Error('No se proporcionó un token de autenticación');
+
+      await apiService.rateArticle(articleId, rating, token);
+      showBottomSheet = false;
+    } catch (error) {
+      console.error('Error al calificar:', error);
+    }
   }
-}
 
   function toggleDarkMode() {
     isDarkMode = !isDarkMode;
@@ -530,26 +548,27 @@ async function handleComment(content) {
     <CommentsPanel
       comments={comments}
       onPostComment={handleComment}
+      onLikeComment={handleLikeComment} 
       onClose={() => (showComments = false)}
     />
   {/if}
 
   <!-- BottomSheet -->
   {#if showBottomSheet}
-  <BottomSheet
-    activeContent={activeBottomSheetContent}
-    {toc}
-    {comments}
-    {activeSection}
-    onNavigate={scrollToSection}
-    onPostComment={handleComment}
-    onRate={handleRating}
-    on:close={() => {
-      showBottomSheet = false;
-      activeBottomSheetContent = '';
-    }}
-  />
-{/if}
+    <BottomSheet
+      activeContent={activeBottomSheetContent}
+      {toc}
+      {comments}
+      {activeSection}
+      onNavigate={scrollToSection}
+      onPostComment={handleComment}
+      onRate={handleRating}
+      on:close={() => {
+        showBottomSheet = false;
+        activeBottomSheetContent = '';
+      }}
+    />
+  {/if}
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}

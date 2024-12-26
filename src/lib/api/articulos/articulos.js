@@ -137,11 +137,13 @@ export async function getComentariosUsuario(userId, authToken) {
   }
 }
 
-export const postComment = (articleId, userId, content, authToken) =>
-  fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken, {
-    method: 'POST',
-    body: { articulo: articleId, usuario: userId, contenido: content }
-  });
+export const postComment = (articleId, content, authToken, parentId = null) => {
+  const body = { articulo: articleId, contenido: content, padre: parentId }; // Usamos 'padre' y eliminamos userId
+  return fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken, {
+      method: 'POST',
+      body: body
+  });
+};
 
 export const requestArticleEnrollment = async (articleId, authToken, reason) => {
   try {
@@ -204,6 +206,19 @@ export const rateArticle = async (articleId, rating, authToken) => {
   }
 };
 
+
+export const likeComment = async (comentarioId, authToken) => {
+  try {
+    const response = await fetchFromAPI(`comentarios/${comentarioId}/toggle_like/`, authToken, {
+      method: 'POST'
+    });
+    return response;
+  } catch (error) {
+    console.error('Error toggling like on comment:', error);
+    throw error;
+  }
+};
+
 const apiService = {
     fetchArticulos,
     fetchArticleById,
@@ -231,7 +246,8 @@ const apiService = {
     fetchEnrollmentStatus,
     requestCustomArticle,
     incrementArticleViews,
-    rateArticle
+    rateArticle,
+    likeComment
    };
    
    export default apiService;
