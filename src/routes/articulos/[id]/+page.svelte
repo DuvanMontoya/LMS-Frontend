@@ -1,11 +1,11 @@
 <!-- src/routes/articulos/[id]/+page.svelte -->
+
 <script>
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { page } from '$app/stores';
   import { sessionStore } from '$lib/stores/sessionStore';
   import { Howl } from 'howler';
-
 
   /* Servicios de API */
   import apiService from '$lib/api/articulos/articulos.js';
@@ -121,7 +121,7 @@
   /**
    * Carga la info del artículo y estados asociados (matrícula, likes, etc.)
    */
-  async function loadInitialData() {
+   async function loadInitialData() {
     isLoading = true;
     error = null;
 
@@ -143,27 +143,25 @@
         apiService.fetchComments(articleId, token)
       ]);
 
+      // Validar que 'acceso' exista
+      if (!articleData.acceso) {
+        throw new Error('El artículo no tiene definido el campo "acceso".');
+      }
+
       // Asignar
       article = articleData;
       isEnrolled = enrollmentData.matriculado;
       enrollmentStatus = statusData.status;
       isLiked = likeData.is_liked;
       likesCount = likeData.total_likes;
-      comments = commentsData.results;
+      comments = commentsData.results; // Asegúrate de que 'commentsData' tenga la estructura correcta
 
       // Generar TOC
       generateTableOfContents();
 
-      // MathJax
-      if (!mathJaxLoaded) {
-        mathJaxLoaded = true;
-        await initializeMathJax();
-      } else {
-        renderMathJax();
-      }
     } catch (err) {
       console.error('Error loading data:', err);
-      error = 'Hubo un problema al cargar el artículo.';
+      error = err.message || 'Hubo un problema al cargar el artículo.';
     } finally {
       isLoading = false;
     }
@@ -359,15 +357,19 @@
     localStorage.setItem('darkMode', String(isDarkMode));
   }
 
-  async function handleEnrollment(reason) {
+  // Escuchar el evento 'requestEnrollment' del componente EnrollModal
+  async function handleEnrollment(event) {
+    const { motivo } = event.detail;
     try {
       const token = get(sessionStore).access;
-      await apiService.matricularArticulo(articleId, reason, token);
-      enrollmentStatus = 'pending';
+      await apiService.matricularArticulo(articleId, motivo, token);
+      enrollmentStatus = 'pendiente';
       showEnrollModal = false;
       await loadInitialData();
+      alert('Solicitud de acceso enviada exitosamente.');
     } catch (err) {
-      console.error('Error requesting enrollment:', err);
+      console.error('Error solicitando matriculación:', err);
+      alert('Hubo un error al enviar la solicitud.');
     }
   }
 
@@ -381,6 +383,15 @@
 
   function toggleTocMobile() {
     showTocMobile = !showTocMobile;
+  }
+
+  async function handleAccessRequest(event) {
+    try {
+      const { motivo } = event.detail; // Captura el motivo desde el evento
+      showEnrollModal = true;
+    } catch (error) {
+      console.error('Error procesando la solicitud de acceso:', error);
+    }
   }
 </script>
 
@@ -464,16 +475,24 @@
           </div>
 
         {:else if article}
-          {#if isEnrolled}
+          {#if isEnrolled || article.acceso === 'gratis'}
             <EnrolledArticle
               contenido_html={article.contenido_html}
               archivo_adjunto={article.archivo_adjunto}
             />
           {:else}
-            <ArticlePreview
-              preview_html={article.preview_html}
-              title={article.titulo}
-              on:requestEnrollment={() => (showEnrollModal = true)}
+            <ArticlePreview 
+              article={{
+                id: article.id,
+                title: article.titulo || 'Sin título',
+                content: article.contenido_html || 'Contenido no disponible',
+                previewLength: 300,
+                requiresAuth: article.acceso !== 'gratis',
+                author: article.autor?.usuario?.username || 'Autor desconocido',
+                publishDate: article.fecha_publicacion || '',
+                readingTime: article.tiempo_lectura || ''
+              }}
+              on:requestAccess={handleAccessRequest}
             />
           {/if}
         {/if}
@@ -482,7 +501,7 @@
   </div>
 
   <!-- Navegación MÓVIL vs Botones flotantes DESKTOP -->
-  {#if isEnrolled}
+  {#if isEnrolled || article?.acceso === 'gratis'}
     {#if isMobile || isVertical}
       <MobileNav
         isLiked={isLiked}
@@ -518,7 +537,7 @@
   {/if}
 
   <!-- Panel de comentarios -->
-  {#if showComments && isEnrolled}
+  {#if showComments && (isEnrolled || article?.acceso === 'gratis')}
     <CommentsPanel
       comments={comments}
       onPostComment={handleComment}
@@ -546,12 +565,12 @@
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}
-    <EnrollModal
-      title={article?.titulo}
-      on:requestEnrollment={handleEnrollment}
-      on:close={() => (showEnrollModal = false)}
-    />
-  {/if}
+  <EnrollModal
+    title={article?.titulo}
+    on:requestEnrollment={handleEnrollment}
+    on:close={() => (showEnrollModal = false)}
+  />
+{/if}
 
   <!-- TOC en móvil y vertical -->
   {#if (isMobile || isVertical) && showTocMobile && toc.length}
@@ -566,6 +585,8 @@
     </div>
   {/if}
 </main>
+
+
 
 <style>
   /*****************************************************/

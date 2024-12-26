@@ -3,42 +3,31 @@ const API_URL = "http://localhost:8000/api/";
 
 
 export async function fetchFromAPI(endpoint, authToken, options = {}) {
-  if (!authToken) {
-    throw new Error('No se proporcionó un token de autenticación');
-  }
-
   const headers = new Headers({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authToken}`
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
   });
 
   try {
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: options.method || 'GET',
-      headers,
-      body: options.body ? JSON.stringify(options.body) : null,
-    });
+      const response = await fetch(`${API_URL}${endpoint}`, {
+          method: options.method || 'GET',
+          headers,
+          body: options.body ? JSON.stringify(options.body) : null,
+      });
 
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error HTTP: ${response.status}. Mensaje: ${errorText}`);
+      }
 
-    const responseText = await response.text();
-
-    if (response.status === 401) {
-      throw new Error('No autorizado');
-    }
-
-    if (!response.ok) {
-      throw new Error(`Error HTTP. Estado: ${response.status}`);
-    }
-
-    try {
+      const responseText = await response.text();
       return responseText ? JSON.parse(responseText) : {};
-    } catch (error) {
-      throw new Error('Respuesta JSON inválida');
-    }
   } catch (error) {
-    throw error;
+      console.error('Error en fetchFromAPI:', error);
+      throw error;
   }
 }
+
 
 export const fetchAPI = async (endpoint, method = 'GET', data = null) => {
   const url = `${API_URL}/${endpoint}`;

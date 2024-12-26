@@ -86,20 +86,24 @@ export const updateLikeStatus = async (articleId, isLiked, authToken) => {
   }
 };
 
-export async function matricularArticulo(articuloId, authToken) {
-    try {
+export async function matricularArticulo(articuloId, motivo, authToken) {
+  try {
       const response = await fetchFromAPI(`articulos/${articuloId}/matricular/`, authToken, {
-        method: 'POST',
+          method: 'POST',
+          body: { motivo },
       });
-      if (!response.ok) {
-        throw new Error('Failed to enroll in article');
+
+      if (!response || typeof response !== 'object') {
+          throw new Error('Respuesta no válida del servidor');
       }
-      return await response.json();
-    } catch (error) {
-      console.error('Error enrolling in article:', error);
+
+      return response; // Devuelve el JSON ya procesado
+  } catch (error) {
+      console.error('Error matricular artículo:', error);
       throw error;
-    }
   }
+}
+
 
 export async function getArticulosFavoritos(userId, authToken) {
   try {
@@ -138,7 +142,7 @@ export async function getComentariosUsuario(userId, authToken) {
 }
 
 export const postComment = (articleId, content, authToken, parentId = null) => {
-  const body = { articulo: articleId, contenido: content, padre: parentId }; // Usamos 'padre' y eliminamos userId
+  const body = { motivo: content, padre: parentId }; // Asegurarse de enviar 'motivo' si es necesario
   return fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken, {
       method: 'POST',
       body: body

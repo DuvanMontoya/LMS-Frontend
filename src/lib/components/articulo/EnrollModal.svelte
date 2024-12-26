@@ -1,4 +1,5 @@
 <!-- src/lib/components/articulo/EnrollModal.svelte -->
+
 <script>
   import { fade, fly } from 'svelte/transition';
   import { createEventDispatcher, onMount } from 'svelte';
@@ -7,27 +8,28 @@
 
   export let title = '';
 
-  let reason = '';
+  let motivo = '';
   let isSubmitting = false;
   let maxLength = 500;
   let currentLength = 0;
-  $: currentLength = reason.length;
+  $: currentLength = motivo.length;
 
   async function handleSubmit() {
-    if (!reason.trim() || isSubmitting) return;
+    if (!motivo.trim() || isSubmitting) return;
 
     try {
       isSubmitting = true;
-      dispatch('requestEnrollment', { reason });
+      // Emitir evento con el motivo para que el componente padre lo maneje
+      dispatch('requestEnrollment', { motivo });
       dispatch('close');
     } catch (error) {
-      console.error('Error submitting enrollment:', error);
+      console.error('Error al enviar solicitud:', error);
     } finally {
       isSubmitting = false;
     }
   }
 
-  // Close modal on Escape key
+  // Cerrar modal al presionar Escape
   function handleKeyDown(event) {
     if (event.key === 'Escape') {
       dispatch('close');
@@ -42,7 +44,7 @@
   });
 </script>
 
-<!-- Backdrop and Modal Container -->
+<!-- Estructura del Modal -->
 <div class="modal-overlay" transition:fade={{ duration: 200 }}>
   <form 
     class="modal-container"
@@ -78,11 +80,11 @@
         </div>
 
         <div class="form-group">
-          <label for="reason">¿Por qué te interesa este artículo?</label>
+          <label for="motivo">¿Por qué te interesa este artículo?</label>
           <div class="textarea-container">
             <textarea
-              id="reason"
-              bind:value={reason}
+              id="motivo"
+              bind:value={motivo}
               maxlength={maxLength}
               rows="5"
               placeholder="Describe brevemente tu interés en este contenido..."
@@ -121,7 +123,7 @@
         <button
           type="submit"
           class="submit-button"
-          disabled={!reason.trim() || isSubmitting}
+          disabled={!motivo.trim() || isSubmitting}
         >
           {#if isSubmitting}
             <div class="loading-spinner"></div>
@@ -135,6 +137,8 @@
     </div>
   </form>
 </div>
+
+
 
 <style>
   .modal-overlay {
