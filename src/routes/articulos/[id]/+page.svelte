@@ -53,11 +53,29 @@
   // Control MathJax
   let mathJaxLoaded = false;
 
+  // Listener de scroll
+  function handleScroll() {
+    const currentScrollY = window.scrollY;
+    isHeaderVisible = currentScrollY <= lastScrollY || currentScrollY < 100;
+    lastScrollY = currentScrollY;
+
+    // Progreso de lectura
+    const winScroll = document.documentElement.scrollTop;
+    const height =
+      document.documentElement.scrollHeight -
+      document.documentElement.clientHeight;
+    readingProgress = (winScroll / height) * 100;
+
+    // Sección activa
+    updateActiveSection();
+  }
+
   onMount(() => {
     // Detectar si es mobile
     const mediaQuery = window.matchMedia('(max-width: 768px)');
     isMobile = mediaQuery.matches;
-    mediaQuery.addListener(e => (isMobile = e.matches));
+    const mediaQueryListener = (e) => (isMobile = e.matches);
+    mediaQuery.addEventListener('change', mediaQueryListener);
 
     // Revisar tema previo
     const storedTheme = localStorage.getItem('darkMode');
@@ -74,6 +92,7 @@
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      mediaQuery.removeEventListener('change', mediaQueryListener);
     };
   });
 
@@ -94,14 +113,19 @@
       const token = get(sessionStore).access;
       if (!token) throw new Error('No se encontró token de autenticación');
 
-      const [articleData, enrollmentData, statusData, likeData, commentsData] =
-        await Promise.all([
-          apiService.fetchArticleById(articleId, token),
-          apiService.checkArticleEnrollment(articleId, token),
-          apiService.fetchEnrollmentStatus(articleId, token),
-          apiService.fetchLikeStatus(articleId, token),
-          apiService.fetchComments(articleId, token)
-        ]);
+      const [
+        articleData,
+        enrollmentData,
+        statusData,
+        likeData,
+        commentsData
+      ] = await Promise.all([
+        apiService.fetchArticleById(articleId, token),
+        apiService.checkArticleEnrollment(articleId, token),
+        apiService.fetchEnrollmentStatus(articleId, token),
+        apiService.fetchLikeStatus(articleId, token),
+        apiService.fetchComments(articleId, token)
+      ]);
 
       // Asignar
       article = articleData;
@@ -156,7 +180,7 @@
         resolve();
       };
 
-      script.onerror = reject;
+      script.onerror = () => reject(new Error('MathJax failed to load'));
       document.head.appendChild(script);
     });
   }
@@ -189,23 +213,6 @@
     article.contenido_html = tempDiv.innerHTML;
   }
 
-  /** Scroll: progreso de lectura y header visible/oculto */
-  function handleScroll() {
-    const currentScrollY = window.scrollY;
-    isHeaderVisible = currentScrollY <= lastScrollY || currentScrollY < 100;
-    lastScrollY = currentScrollY;
-
-    // Progreso de lectura
-    const winScroll = document.documentElement.scrollTop;
-    const height =
-      document.documentElement.scrollHeight -
-      document.documentElement.clientHeight;
-    readingProgress = (winScroll / height) * 100;
-
-    // Sección activa
-    updateActiveSection();
-  }
-
   function updateActiveSection() {
     if (!toc.length) return;
 
@@ -226,7 +233,7 @@
     const element = document.getElementById(id);
     if (!element) return;
 
-    const offset = 80;
+    const offset = isMobile ? 60 : 80; // Ajuste según el tamaño del header
     const elementPosition = element.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -269,7 +276,7 @@
       bottom: 50px;
       right: 50px;
       pointer-events: none;
-      z-index: 9999;
+      z-index: 2000; /* Asegurar que esté por encima de otros elementos */
     `;
     for (let i = 0; i < 5; i++) {
       const heart = document.createElement('i');
@@ -297,8 +304,7 @@
       if (!token) {
         throw new Error('Debes iniciar sesión para comentar');
       }
-      // await apiService.postComment(articleId, content, parentId, token);
-      await apiService.postComment(articleId, content, token, parentId); // Ahora pasamos parentId
+      await apiService.postComment(articleId, content, token, parentId);
       await loadInitialData();
     } catch (error) {
       console.error('Error posting comment:', error);
@@ -372,7 +378,7 @@
 </svelte:head>
 
 <!-- CONTENEDOR PRINCIPAL -->
-<main class="article-page theme-transition {isDarkMode ? 'dark-mode' : ''}" class:loading={isLoading}>
+<main class="article-page theme-transition {isDarkMode ? 'dark-mode' : ''} {isLoading ? 'loading' : ''}">
   <!-- Barra de progreso -->
   <div class="reading-progress" style="width: {readingProgress}%"></div>
 
@@ -405,9 +411,11 @@
       {#if !isMobile && toc.length}
         <div class="toc-wrapper">
           <TableOfContents
-            {toc}
-            {activeSection}
-            on:navigate={scrollToSection}
+            toc={toc}
+            activeSection={activeSection}
+            onNavigate={scrollToSection}
+            isMobile={false}
+            toggleTOC={() => {}}
           />
         </div>
       {/if}
@@ -516,14 +524,14 @@
     <MobileNav
       isLiked={isLiked}
       likesCount={likesCount}
-      onLike={handleLikeClick}    
-      onComments={() => (showComments = true)}
-      onRate={() => {
+      on:like={handleLikeClick}    
+      on:comments={openComments}
+      on:rate={() => {
         showBottomSheet = true;
         activeBottomSheetContent = 'rating';
       }}
-      onToggleDarkMode={toggleDarkMode}
-      onScrollToTop={scrollToTop}
+      on:toggleDarkMode={toggleDarkMode}
+      on:scrollToTop={scrollToTop}
       isDarkMode={isDarkMode}
     />
   {:else}
@@ -557,13 +565,13 @@
   {#if showBottomSheet}
     <BottomSheet
       activeContent={activeBottomSheetContent}
-      {toc}
-      {comments}
-      {activeSection}
+      toc={toc}
+      comments={comments}
+      activeSection={activeSection}
       onNavigate={scrollToSection}
       onPostComment={handleComment}
       onRate={handleRating}
-      on:close={() => {
+      onClose={() => {
         showBottomSheet = false;
         activeBottomSheetContent = '';
       }}
@@ -572,11 +580,13 @@
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}
-    <EnrollModal
-      title={article?.titulo}
-      onRequestEnrollment={handleEnrollment}
-      onClose={() => (showEnrollModal = false)}
-    />
+    <div class="modal-overlay">
+      <EnrollModal
+        title={article?.titulo}
+        on:requestEnrollment={handleEnrollment}
+        on:close={() => (showEnrollModal = false)}
+      />
+    </div>
   {/if}
 </main>
 
@@ -602,6 +612,8 @@
     --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     --box-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
     --transition-speed: 0.3s;
+    --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+    --modal-z-index: 2500; /* Mayor que otros elementos */
   }
 
   :root.dark {
@@ -629,7 +641,9 @@
     transition: background-color var(--transition-speed), color var(--transition-speed);
     position: relative;
     overflow-x: hidden;
+    z-index: 1; /* Base */
   }
+
   .article-page.loading {
     pointer-events: none;
   }
@@ -640,7 +654,7 @@
     left: 0;
     height: 3px;
     background: linear-gradient(to right, var(--primary-color), var(--accent-color));
-    z-index: 1000;
+    z-index: 3000; /* Mayor que la mayoría de los elementos */
     transition: width 0.2s ease-out;
   }
 
@@ -651,7 +665,7 @@
     right: 0;
     background-color: var(--background-color2);
     box-shadow: var(--box-shadow);
-    z-index: 100;
+    z-index: 2000; /* Superior a la TOC pero inferior a modales */
     padding: 1rem;
     backdrop-filter: blur(10px);
   }
@@ -689,6 +703,7 @@
     max-width: 1600px;
     margin: 0 auto;
     padding: 2rem;
+    padding-top: 4.5rem; /* Ajuste para el header fijo */
   }
 
   /*****************************************************/
@@ -704,8 +719,10 @@
   /* Envoltorio de la TOC para que sea sticky y se adapte al header */
   .toc-wrapper {
     position: sticky;
+    top: 80px; /* Altura del header fijo */
     max-height: calc(100vh - 140px);
     overflow-y: auto;
+    z-index: 1500; /* Superior a la mayoría de los elementos */
   }
 
   .article-content-wrapper {
@@ -715,7 +732,10 @@
     padding: 2rem;
     transition: all var(--transition-speed);
     min-width: 0;
+    position: relative;
+    z-index: 1000;
   }
+
   .article-content-wrapper:hover {
     box-shadow: var(--box-shadow-elevated);
   }
@@ -767,6 +787,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: all var(--transition-speed);
+    z-index: 1001;
   }
 
   .retry-button:hover {
@@ -792,7 +813,13 @@
     border-radius: var(--border-radius);
     background-color: var(--background-elevated);
     margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: var(--box-shadow-elevated);
+    z-index: 1001;
   }
+
   .status-icon {
     width: 80px;
     height: 80px;
@@ -803,10 +830,12 @@
     justify-content: center;
     font-size: 2rem;
   }
+
   .status-message.pending .status-icon {
     background-color: rgba(var(--accent-rgb), 0.1);
     color: var(--accent-color);
   }
+
   .status-message.rejected .status-icon {
     background-color: rgba(239, 68, 68, 0.1);
     color: #ef4444;
@@ -815,7 +844,9 @@
   .enrollment-prompt {
     max-width: 600px;
     margin: 0 auto;
+    z-index: 1001;
   }
+
   .lock-icon {
     width: 100px;
     height: 100px;
@@ -828,11 +859,15 @@
     font-size: 2.5rem;
     color: white;
   }
+
   .preview-content {
     margin: 2rem 0;
     position: relative;
     border-radius: var(--border-radius);
     overflow: hidden;
+    box-shadow: var(--box-shadow-elevated);
+    background-color: var(--background-color);
+    padding: 1rem;
   }
 
   .enroll-button,
@@ -850,7 +885,9 @@
     margin: 2rem auto 0;
     cursor: pointer;
     transition: all var(--transition-speed);
+    z-index: 1001;
   }
+
   .enroll-button:hover,
   .action-button:hover {
     background-color: var(--primary-dark);
@@ -864,6 +901,7 @@
     padding-top: 3rem;
     border-top: 2px solid var(--accent-color);
   }
+
   .attachment-section h3 {
     display: flex;
     align-items: center;
@@ -871,6 +909,7 @@
     color: var(--text-color);
     margin-bottom: 1.5rem;
   }
+
   .download-button {
     display: inline-flex;
     align-items: center;
@@ -882,7 +921,9 @@
     text-decoration: none;
     font-weight: 500;
     transition: all var(--transition-speed);
+    z-index: 1001;
   }
+
   .download-button:hover {
     background-color: var(--secondary-dark);
     transform: translateY(-2px);
@@ -892,6 +933,8 @@
   /*** Resalte de sección al navegar ***/
   :global(.highlight-section) {
     animation: highlightSection 2s ease-out;
+    position: relative;
+    z-index: 1001;
   }
 
   @keyframes highlightSection {
@@ -915,8 +958,9 @@
     bottom: 50px;
     right: 50px;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 2000; /* Superior a la mayoría de los elementos */
   }
+
   :global(.floating-heart) {
     position: absolute;
     font-size: 2rem;
@@ -924,6 +968,7 @@
     animation: floatUp 1.5s ease forwards;
     opacity: 0;
   }
+
   @keyframes floatUp {
     0% {
       transform: translate(0, 0) rotate(0deg) scale(1);
@@ -951,16 +996,22 @@
   @media (max-width: 768px) {
     .article-container {
       padding: 1rem;
+      padding-top: 3rem; /* Ajuste para header móvil */
     }
 
     .sticky-header {
       padding: 0.75rem;
+      z-index: 2000; /* Asegurar que el header móvil esté por encima */
     }
     .header-content {
       padding: 0 1rem;
     }
     .header-title {
       font-size: 1rem;
+    }
+
+    .toc-wrapper {
+      display: none; /* Ocultar TOC en móvil */
     }
   }
 
@@ -980,5 +1031,40 @@
   /*** Transición suave de tema ***/
   .theme-transition {
     transition: background-color var(--transition-speed), color var(--transition-speed);
+  }
+
+  /*****************************************************/
+  /*** Asegurar que el TOC no quede oculto ***/
+  .article-layout {
+    padding-top: 1rem;
+  }
+
+  .toc-wrapper {
+    top: 100px; /* Ajuste para evitar superposición con el sticky header */
+  }
+
+  /*****************************************************/
+  /*** Modal Overlay ***/
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--modal-overlay-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--modal-z-index); /* Superior a otros elementos */
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 </style>

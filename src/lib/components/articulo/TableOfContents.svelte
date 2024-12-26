@@ -1,6 +1,6 @@
-<!-- src/lib/components/Article/TableOfContents.svelte -->
+<!-- src/lib/components/articulo/TableOfContents.svelte -->
 <script>
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   export let toc = [];
   export let activeSection = "";
   export let onNavigate = () => {};
@@ -10,14 +10,24 @@
   let tocElement;
   let isSticky = false;
 
+  let observer;
+
   onMount(() => {
     if (!isMobile) {
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         ([e]) => isSticky = e.intersectionRatio < 1,
         { threshold: [1] }
       );
-      observer.observe(tocElement);
+      if (tocElement) {
+        observer.observe(tocElement);
+      }
     }
+
+    return () => {
+      if (observer && tocElement) {
+        observer.unobserve(tocElement);
+      }
+    };
   });
 </script>
 
@@ -61,7 +71,7 @@
     margin-right: 2rem;
     border: 1px solid rgba(var(--primary-rgb), 0.1);
     position: relative;
-    z-index: 10;
+    z-index: 1500; /* Asegurar que esté por encima de otros contenidos pero por debajo de modales */
     transition: all var(--transition-speed);
     max-height: calc(100vh - 2rem);
     display: flex;
@@ -70,7 +80,7 @@
 
   .table-of-contents.sticky {
     position: fixed;
-    top: 2rem;
+    top: 80px; /* Ajustado para coincidir con el header fijo */
   }
 
   .toc-header {
@@ -89,7 +99,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l7.9-7.9h-.828zm5.656 0L19.515 8.485 17.343 10.657 28 0h-2.83zM32.656 0L41.142 8.485 39.728 9.9l-7.9-7.9h.828zm5.656 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zm5.657 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zM2.828 0L0 2.828v2.83L5.657 0H2.828zM54.627 60l.83-.828-1.415-1.415L51.8 60h2.827zM5.373 60l-.83-.828L5.96 57.757 8.2 60H5.374zM48.97 60l3.657-3.657-1.414-1.414L46.143 60h2.828zM11.03 60L7.372 56.343 8.787 54.93 13.857 60H11.03zm32.284 0L49.8 53.515l-1.414-1.414-7.9 7.9h2.83zM16.686 60L10.2 53.515l1.414-1.414 7.9 7.9h-2.83zM22.344 60L13.858 51.515l1.414-1.414 7.9 7.9h-.828zm5.656 0l-8.485-8.485-2.172-2.172L28 60h-2.83zM32.656 60l8.486-8.485-1.414-1.414-7.9 7.9h.828zm5.656 0l8.485-8.485-1.414-1.414-7.9 7.9h.83zm5.657 0l8.485-8.485-1.414-1.414-7.9 7.9h.83zM2.828 60L0 57.172v-2.83L5.657 60H2.828z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E") center/60px;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l7.9-7.9h-.828zm5.656 0L19.515 8.485 17.343 10.657 28 0h-2.83zM32.656 0L41.142 8.485 39.728 9.9l-7.9-7.9h.828zm5.656 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zm5.657 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zM2.828 0L0 2.828v2.83L5.657 0H2.828zM54.627 60l.83-.828-1.415-1.415L51.8 60h2.827zM5.373 60l-.83-.828L5.96 57.757 8.2 60H5.374zM48.97 60l3.657-3.657-1.414-1.414L46.143 60h2.828zM11.03 60L7.372 56.343 8.787 54.93 13.857 60H11.03zm32.284 60L49.8 53.515l-1.414-1.414-7.9 7.9h2.83zM16.686 60L10.2 53.515l1.414-1.414 7.9 7.9h-2.83zM22.344 60L13.858 51.515l1.414-1.414 7.9 7.9h-.828zm5.656 60l-8.485-8.485-2.172-2.172L28 60h-2.83zM32.656 60l8.486-8.485-1.414-1.414-7.9 7.9h.828zm5.656 60l8.485-8.485-1.414-1.414-7.9 7.9h.83zm5.657 60l8.485-8.485-1.414-1.414-7.9 7.9h.83zM2.828 60L0 57.172v-2.83L5.657 60H2.828z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E") center/60px;
   }
 
   .toc-header h2 {
@@ -111,6 +121,7 @@
     padding: 0.5rem;
     cursor: pointer;
     transition: transform var(--transition-speed);
+    z-index: 1;
   }
 
   .close-button:hover {
@@ -136,6 +147,7 @@
     text-align: left;
     cursor: pointer;
     transition: all var(--transition-speed);
+    position: relative;
   }
 
   .toc-marker {
@@ -143,6 +155,7 @@
     display: flex;
     align-items: center;
     padding-top: 0.25rem;
+    flex-shrink: 0;
   }
 
   .marker-dot {
@@ -210,8 +223,19 @@
     max-width: 350px;
     height: 100vh;
     margin: 0;
-    z-index: 1500;
+    z-index: 2000; /* Superior a la TOC en desktop */
     border-radius: 0;
+    box-shadow: var(--box-shadow-elevated);
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   @media (max-width: 1200px) {
