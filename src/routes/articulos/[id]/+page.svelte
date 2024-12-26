@@ -12,7 +12,8 @@
   /* Componentes */
   import ArticleHeader from '$lib/components/articulo/ArticleHeader.svelte';
   import TableOfContents from '$lib/components/articulo/TableOfContents.svelte';
-  import ArticleContent from '$lib/components/articulo/ArticleContent.svelte';
+  import EnrolledArticle from '$lib/components/articulo/EnrolledArticle.svelte';
+  import RestrictedArticle from '$lib/components/articulo/RestrictedArticle.svelte';
   import FloatingButtons from '$lib/components/articulo/FloatingButtons.svelte';
   import MobileNav from '$lib/components/articulo/MobileNav.svelte';
   import CommentsPanel from '$lib/components/articulo/CommentsPanel.svelte';
@@ -226,6 +227,8 @@
     }
     if (current !== activeSection) {
       activeSection = current;
+      // Emitir evento o llamar función para scroll en TOC
+      // Aquí asumimos que el TOC manejará el scroll automáticamente
     }
   }
 
@@ -362,6 +365,10 @@
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  function toggleTocMobile() {
+    showTocMobile = !showTocMobile;
+  }
 </script>
 
 <svelte:head>
@@ -415,7 +422,7 @@
             activeSection={activeSection}
             onNavigate={scrollToSection}
             isMobile={false}
-            toggleTOC={() => {}}
+            toggleTOC={toggleTocMobile}
           />
         </div>
       {/if}
@@ -439,80 +446,16 @@
 
         {:else if article}
           {#if isEnrolled}
-            <!-- CONTENIDO COMPLETO -->
-            <ArticleContent contenido_html={article.contenido_html} />
-
-            {#if article.archivo_adjunto}
-              <div class="attachment-section">
-                <h3>
-                  <i class="fas fa-paperclip"></i>
-                  Material complementario
-                </h3>
-                <a
-                  href={article.archivo_adjunto}
-                  class="download-button"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <i class="fas fa-file-download"></i>
-                  Descargar archivo
-                </a>
-              </div>
-            {/if}
-
+            <EnrolledArticle
+              contenido_html={article.contenido_html}
+              archivo_adjunto={article.archivo_adjunto}
+            />
           {:else}
-            <!-- SIN ACCESO COMPLETO -->
-            <div class="enrollment-section">
-              {#if enrollmentStatus === 'pending'}
-                <div class="status-message pending">
-                  <div class="status-icon">
-                    <i class="fas fa-clock"></i>
-                  </div>
-                  <h3>Solicitud en revisión</h3>
-                  <p>Tu solicitud de acceso está siendo evaluada.</p>
-                </div>
-
-              {:else if enrollmentStatus === 'rejected'}
-                <div class="status-message rejected">
-                  <div class="status-icon">
-                    <i class="fas fa-times-circle"></i>
-                  </div>
-                  <h3>Solicitud rechazada</h3>
-                  <p>Lo sentimos, tu solicitud fue rechazada.</p>
-                  <button
-                    class="action-button"
-                    on:click={() => (showEnrollModal = true)}
-                  >
-                    Solicitar acceso nuevamente
-                  </button>
-                </div>
-
-              {:else}
-                <!-- VISTA PREVIA -->
-                <div class="enrollment-prompt">
-                  <div class="lock-icon">
-                    <i class="fas fa-lock"></i>
-                  </div>
-                  <h3>Contenido restringido</h3>
-                  <p>Este artículo requiere solicitar acceso.</p>
-
-                  <div class="preview-content">
-                    <ArticleContent
-                      contenido_html={article.preview_html}
-                      isPreview={true}
-                    />
-                  </div>
-
-                  <button
-                    class="enroll-button"
-                    on:click={() => (showEnrollModal = true)}
-                  >
-                    <i class="fas fa-key"></i>
-                    Solicitar acceso
-                  </button>
-                </div>
-              {/if}
-            </div>
+            <RestrictedArticle
+              preview_html={article.preview_html}
+              title={article.titulo}
+              onRequestEnrollment={() => (showEnrollModal = true)}
+            />
           {/if}
         {/if}
       </article>
@@ -533,6 +476,7 @@
       on:toggleDarkMode={toggleDarkMode}
       on:scrollToTop={scrollToTop}
       isDarkMode={isDarkMode}
+      on:toggleToc={toggleTocMobile}
     />
   {:else}
     <!-- Capturamos eventos emitidos por FloatingButtons -->
@@ -585,6 +529,19 @@
         title={article?.titulo}
         on:requestEnrollment={handleEnrollment}
         on:close={() => (showEnrollModal = false)}
+      />
+    </div>
+  {/if}
+
+  <!-- TOC en móvil -->
+  {#if isMobile && showTocMobile && toc.length}
+    <div class="modal-overlay">
+      <TableOfContents
+        toc={toc}
+        activeSection={activeSection}
+        onNavigate={scrollToSection}
+        isMobile={true}
+        toggleTOC={toggleTocMobile}
       />
     </div>
   {/if}
@@ -750,6 +707,8 @@
     justify-content: center;
     padding: 4rem 2rem;
     text-align: center;
+    position: relative;
+    z-index: 1001;
   }
 
   .spinner {
@@ -799,134 +758,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-
-  /*****************************************************/
-  /*** Sección de matrícula / restricciones ***/
-  .enrollment-section {
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .status-message {
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    background-color: var(--background-elevated);
-    margin-bottom: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: var(--box-shadow-elevated);
-    z-index: 1001;
-  }
-
-  .status-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1.5rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-  }
-
-  .status-message.pending .status-icon {
-    background-color: rgba(var(--accent-rgb), 0.1);
-    color: var(--accent-color);
-  }
-
-  .status-message.rejected .status-icon {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-  }
-
-  .enrollment-prompt {
-    max-width: 600px;
-    margin: 0 auto;
-    z-index: 1001;
-  }
-
-  .lock-icon {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto 2rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    color: white;
-  }
-
-  .preview-content {
-    margin: 2rem 0;
-    position: relative;
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    box-shadow: var(--box-shadow-elevated);
-    background-color: var(--background-color);
-    padding: 1rem;
-  }
-
-  .enroll-button,
-  .action-button {
-    padding: 1rem 2rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius);
-    font-size: 1.1rem;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 2rem auto 0;
-    cursor: pointer;
-    transition: all var(--transition-speed);
-    z-index: 1001;
-  }
-
-  .enroll-button:hover,
-  .action-button:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-2px);
-  }
-
-  /*****************************************************/
-  /*** Archivo Adjunto ***/
-  .attachment-section {
-    margin-top: 3rem;
-    padding-top: 3rem;
-    border-top: 2px solid var(--accent-color);
-  }
-
-  .attachment-section h3 {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: var(--text-color);
-    margin-bottom: 1.5rem;
-  }
-
-  .download-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 2rem;
-    background-color: var(--secondary-color);
-    color: white;
-    border-radius: var(--border-radius);
-    text-decoration: none;
-    font-weight: 500;
-    transition: all var(--transition-speed);
-    z-index: 1001;
-  }
-
-  .download-button:hover {
-    background-color: var(--secondary-dark);
-    transform: translateY(-2px);
   }
 
   /*****************************************************/
@@ -1011,7 +842,7 @@
     }
 
     .toc-wrapper {
-      display: none; /* Ocultar TOC en móvil */
+      display: none; /* Ocultar TOC en desktop cuando es móvil */
     }
   }
 
@@ -1031,16 +862,6 @@
   /*** Transición suave de tema ***/
   .theme-transition {
     transition: background-color var(--transition-speed), color var(--transition-speed);
-  }
-
-  /*****************************************************/
-  /*** Asegurar que el TOC no quede oculto ***/
-  .article-layout {
-    padding-top: 1rem;
-  }
-
-  .toc-wrapper {
-    top: 100px; /* Ajuste para evitar superposición con el sticky header */
   }
 
   /*****************************************************/

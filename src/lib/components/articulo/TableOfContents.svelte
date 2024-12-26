@@ -1,6 +1,8 @@
 <!-- src/lib/components/articulo/TableOfContents.svelte -->
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { tick } from 'svelte';
+
   export let toc = [];
   export let activeSection = "";
   export let onNavigate = () => {};
@@ -29,6 +31,15 @@
       }
     };
   });
+
+  // Scroll TOC to active item when activeSection changes
+  $: if (activeSection && tocElement) {
+    const activeItem = tocElement.querySelector(`.toc-item.active`);
+    if (activeItem) {
+      // Scroll the active item into view within the TOC
+      activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
 </script>
 
 <nav 
@@ -227,6 +238,7 @@
     border-radius: 0;
     box-shadow: var(--box-shadow-elevated);
     animation: slideIn 0.3s ease;
+    background-color: var(--background-color2);
   }
 
   @keyframes slideIn {
