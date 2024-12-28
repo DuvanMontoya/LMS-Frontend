@@ -19,12 +19,12 @@
   } from '$lib/api/articulos/articulos';
 
   // Importar componentes
-  import SearchBar from '$lib/components/articulo/SearchBar.svelte';
-  import SortDropdown from '$lib/components/articulo/SortDropdown.svelte';
-  import FilterPanel from '$lib/components/articulo/FilterPanel.svelte';
-  import ArticlesList from '$lib/components/articulo/ArticlesList.svelte';
-  import Pagination from '$lib/components/articulo/Pagination.svelte';
-  import FilterToggleButton from '$lib/components/articulo/FilterToggleButton.svelte';
+  import SearchBar from '$lib/components/articulo/Articulos/SearchBar.svelte';
+  import SortDropdown from '$lib/components/articulo/Articulos/SortDropdown.svelte';
+  import FilterPanel from '$lib/components/articulo/Articulos/FilterPanel.svelte';
+  import ArticlesList from '$lib/components/articulo/Articulos/ArticlesList.svelte';
+  import Pagination from '$lib/components/articulo/Articulos/Pagination.svelte';
+  import FilterToggleButton from '$lib/components/articulo/Articulos/FilterToggleButton.svelte';
 
   // Estado
   let filteredArticles = [];

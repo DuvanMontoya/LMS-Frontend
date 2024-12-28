@@ -1,7 +1,13 @@
+<!-- Este componente se encarga de renderizar el contenido de un artículo, procesando y mejorando el HTML recibido. También se encarga de renderizar las ecuaciones matemáticas con MathJax. -->
+<!-- lib/components/articulo/ArticleContent.svelte -->
 <script>
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount, afterUpdate, getContext } from 'svelte';
   import { fade } from 'svelte/transition';
-  
+  import DOMPurify from 'dompurify';
+
+  // Get MathJax context
+  const mathJax = getContext('mathjax');
+
   export let contenido_html = '';
   export let isPreview = false;
 
@@ -10,18 +16,16 @@
     if (!contenido_html) return;
 
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = contenido_html;
+    tempDiv.innerHTML = DOMPurify.sanitize(contenido_html);
 
     // Procesar imágenes
     tempDiv.querySelectorAll('img').forEach(img => {
       const figure = document.createElement('figure');
       const caption = document.createElement('figcaption');
-      
-      // Añadir clases y atributos
+
       img.classList.add('article-image');
       img.setAttribute('loading', 'lazy');
-      
-      // Crear caption si hay alt text
+
       if (img.getAttribute('alt')) {
         caption.textContent = img.getAttribute('alt');
         img.parentNode.insertBefore(figure, img);
@@ -42,8 +46,7 @@
     tempDiv.querySelectorAll('pre code').forEach(code => {
       const pre = code.parentElement;
       pre.classList.add('code-block');
-      
-      // Añadir botón de copiar
+
       const copyButton = document.createElement('button');
       copyButton.className = 'copy-button';
       copyButton.innerHTML = '<i class="fas fa-copy"></i>';
@@ -60,14 +63,26 @@
     contenido_html = tempDiv.innerHTML;
   }
 
+  async function renderMath() {
+    if (mathJax && typeof mathJax.renderMath === 'function') {
+      const contentElement = document.querySelector('.article-content');
+      if (contentElement) {
+        try {
+          await mathJax.renderMath(contentElement);
+        } catch (error) {
+          console.error('Error rendering math:', error);
+        }
+      }
+    }
+  }
+
   onMount(() => {
     enhanceContent();
+    renderMath(); // Renderiza las ecuaciones al montar
   });
 
   afterUpdate(() => {
-    if (window.MathJax?.Hub) {
-      window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub]);
-    }
+    renderMath(); // Vuelve a renderizar si el contenido cambia
   });
 </script>
 
@@ -77,6 +92,8 @@
 >
   {@html contenido_html}
 </article>
+
+
 
 <style>
   .article-content {

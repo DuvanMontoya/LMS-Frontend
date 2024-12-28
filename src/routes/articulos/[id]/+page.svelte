@@ -1,5 +1,4 @@
 <!-- src/routes/articulos/[id]/+page.svelte -->
-
 <script>
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
@@ -11,15 +10,15 @@
   import apiService from '$lib/api/articulos/articulos.js';
 
   /* Componentes */
-  import ArticleHeader from '$lib/components/articulo/ArticleHeader.svelte';
-  import TableOfContents from '$lib/components/articulo/TableOfContents.svelte';
-  import EnrolledArticle from '$lib/components/articulo/EnrolledArticle.svelte';
-  import ArticlePreview from '$lib/components/articulo/ArticlePreview.svelte';
-  import FloatingButtons from '$lib/components/articulo/FloatingButtons.svelte';
-  import MobileNav from '$lib/components/articulo/MobileNav.svelte';
-  import CommentsPanel from '$lib/components/articulo/CommentsPanel.svelte';
-  import BottomSheet from '$lib/components/articulo/BottomSheet.svelte';
-  import EnrollModal from '$lib/components/articulo/EnrollModal.svelte';
+  import ArticleHeader from '$lib/components/articulo/id/ArticleHeader.svelte';
+  import TableOfContents from '$lib/components/articulo/id/TableOfContents.svelte';
+  import EnrolledArticle from '$lib/components/articulo/id/EnrolledArticle.svelte';
+  import ArticlePreview from '$lib/components/articulo/id/ArticlePreview.svelte';
+  import FloatingButtons from '$lib/components/articulo/id/FloatingButtons.svelte';
+  import MobileNav from '$lib/components/articulo/id/MobileNav.svelte';
+  import CommentsPanel from '$lib/components/articulo/id/CommentsPanel.svelte';
+  import BottomSheet from '$lib/components/articulo/id/BottomSheet.svelte';
+  import EnrollModal from '$lib/components/articulo/id/EnrollModal.svelte';
 
   /* Estado principal */
   let articleId = $page.params.id;
@@ -54,8 +53,6 @@
   let enrollmentStatus = null;
   let showEnrollModal = false;
 
-  // Control MathJax
-  let mathJaxLoaded = false;
 
   // Listener de scroll
   function handleScroll() {
@@ -121,7 +118,7 @@
   /**
    * Carga la info del artículo y estados asociados (matrícula, likes, etc.)
    */
-   async function loadInitialData() {
+  async function loadInitialData() {
     isLoading = true;
     error = null;
 
@@ -154,7 +151,7 @@
       enrollmentStatus = statusData.status;
       isLiked = likeData.is_liked;
       likesCount = likeData.total_likes;
-      comments = commentsData.results; // Asegúrate de que 'commentsData' tenga la estructura correcta
+      comments = commentsData.results;
 
       // Generar TOC
       generateTableOfContents();
@@ -167,43 +164,6 @@
     }
   }
 
-  /** Manejo MathJax */
-  async function initializeMathJax() {
-    if (window.MathJax) {
-      renderMathJax();
-      return;
-    }
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src =
-        'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML';
-      script.async = true;
-
-      script.onload = () => {
-        window.MathJax.Hub.Config({
-          tex2jax: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$'], ['\\[', '\\]']],
-            processEscapes: true
-          },
-          messageStyle: 'none',
-          showProcessingMessages: false,
-          showMathMenu: false
-        });
-        renderMathJax();
-        resolve();
-      };
-
-      script.onerror = () => reject(new Error('MathJax failed to load'));
-      document.head.appendChild(script);
-    });
-  }
-
-  function renderMathJax() {
-    if (window.MathJax?.Hub) {
-      window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub]);
-    }
-  }
 
   /** Genera la tabla de contenido (TOC) */
   function generateTableOfContents() {
@@ -234,7 +194,7 @@
     let current = '';
     for (const section of sections) {
       const rect = section.getBoundingClientRect();
-      if (rect.top <= window.innerHeight / 2) { // Mantener la sección en la mitad
+      if (rect.top <= window.innerHeight / 2) {
         current = section.id;
       }
     }
@@ -247,7 +207,7 @@
     const element = document.getElementById(id);
     if (!element) return;
 
-    const offset = isMobile || isVertical ? 60 : 80; // Ajuste según el tamaño del header
+    const offset = isMobile || isVertical ? 60 : 80;
     const elementPosition = element.getBoundingClientRect().top;
     const offsetPosition = elementPosition + window.pageYOffset - offset;
 
@@ -387,7 +347,7 @@
 
   async function handleAccessRequest(event) {
     try {
-      const { motivo } = event.detail; // Captura el motivo desde el evento
+      const { motivo } = event.detail;
       showEnrollModal = true;
     } catch (error) {
       console.error('Error procesando la solicitud de acceso:', error);
@@ -565,12 +525,12 @@
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}
-  <EnrollModal
-    title={article?.titulo}
-    on:requestEnrollment={handleEnrollment}
-    on:close={() => (showEnrollModal = false)}
-  />
-{/if}
+    <EnrollModal
+      title={article?.titulo}
+      on:requestEnrollment={handleEnrollment}
+      on:close={() => (showEnrollModal = false)}
+    />
+  {/if}
 
   <!-- TOC en móvil y vertical -->
   {#if (isMobile || isVertical) && showTocMobile && toc.length}
@@ -585,7 +545,6 @@
     </div>
   {/if}
 </main>
-
 
 
 <style>

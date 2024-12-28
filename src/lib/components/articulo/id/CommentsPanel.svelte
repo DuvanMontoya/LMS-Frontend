@@ -1,7 +1,7 @@
 <!-- src/lib/components/articulo/CommentsPanel.svelte -->
 <script>
   import { fade, fly } from 'svelte/transition';
-  import Avatar from '$lib/components/articulo/Avatar.svelte';
+  import Avatar from '$lib/components/articulo/id/Avatar.svelte';
   import { onMount, onDestroy } from 'svelte';
 
   // Props que recibe el componente
@@ -33,7 +33,7 @@
     } catch (error) {
       console.error('Error al enviar el comentario:', error);
       // Opcional: puedes emitir un evento para manejar errores a un componente padre
-      // dispatch('error', { message: 'No se pudo enviar el comentario. Inténtalo de nuevo.' });
+      dispatch('error', { message: 'No se pudo enviar el comentario. Inténtalo de nuevo.' });
     } finally {
       isSubmitting = false;
     }

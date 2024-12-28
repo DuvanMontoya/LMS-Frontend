@@ -1,5 +1,5 @@
 <script>
-    import PDFViewer from "$lib/components/articulo/PDFViewer.svelte";
+    import PDFViewer from "$lib/components/articulo/Articulos/PDFViewer.svelte";
 </script>
 
 <PDFViewer

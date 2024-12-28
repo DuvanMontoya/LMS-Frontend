@@ -9,6 +9,8 @@
 	import { sessionStore } from "$lib/stores/sessionStore";
 	import { page } from "$app/stores";
 	import ToastContainer from "svelte-toasts/src/ToastContainer.svelte";
+	// import MathJaxProvider from '$lib/components/extras//MathJaxProvider.svelte';
+	
 
 	let isLoading = true;
 	let isStudyPage = false;
@@ -107,7 +109,9 @@
 					<div class="spinner"></div>
 				</div>
 			{:else}
+			<!-- <MathJaxProvider> -->
 				<slot />
+			<!-- </MathJaxProvider> -->
 			{/if}
 		</div>
 		<ToastContainer position="top-right" />

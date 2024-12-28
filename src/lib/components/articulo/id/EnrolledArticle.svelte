@@ -1,6 +1,6 @@
 <!-- src/lib/components/articulo/EnrolledArticle.svelte -->
 <script>
-    import ArticleContent from '$lib/components/articulo/ArticleContent.svelte';
+    import ArticleContent from '$lib/components/articulo/id/ArticleContent.svelte';
   
     export let contenido_html = '';
     export let archivo_adjunto = '';

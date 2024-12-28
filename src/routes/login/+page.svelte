@@ -1,3 +1,4 @@
+<!-- src/routes/login/+page.svelte -->
 <script>
   import { goto, invalidate } from "$app/navigation";
   import { sessionStore } from "$lib/stores/sessionStore";

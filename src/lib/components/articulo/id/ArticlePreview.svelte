@@ -1,10 +1,9 @@
-<!-- src/lib/components/articulo/ArticlePreview.svelte -->
-
+<!-- Este componente se encarga de renderizar la vista previa de un artículo, mostrando solo una parte del contenido y permitiendo al usuario solicitar acceso al artículo completo. El contenido se procesa y se trunca para mostrar solo una parte del mismo. Si el usuario solic ita acceso, se envía un evento con el ID del artículo y la fecha y hora de la solicitud. -->
+<!-- lib/components/articulo/ArticlePreview.svelte -->
 <script>
-    import { createEventDispatcher, onMount } from 'svelte';
+    import { createEventDispatcher, onMount, afterUpdate, getContext } from 'svelte';
     import DOMPurify from 'dompurify';
   
-    // Props
     export let article = {
       id: null,
       title: '',
@@ -16,152 +15,104 @@
       readingTime: ''
     };
   
-    // Estado local
     let isLoading = false;
     let error = null;
-    let contentContainer;
     let showFullContent = false;
     let truncatedContent = '';
     let requestSent = false;
   
     const dispatch = createEventDispatcher();
+    const mathJax = getContext('mathjax'); // Obtén el contexto directamente
   
-    // Configuración de MathJax
-    const MATHJAX_CONFIG = {
-    tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']],
-      displayMath: [['$$', '$$'], ['\\[', '\\]']],
-      processEscapes: true // Important for v3 to process escapes
-    },
-    svg: {
-      fontCache: 'global'
-    }
-  };
-  
-    onMount(async () => {
+    onMount(() => {
       try {
-        // Inicializar el contenido truncado
         truncatedContent = truncateHTML(article.content, article.previewLength);
-        
-        // Cargar MathJax si es necesario
-        if (containsMathContent(article.content)) {
-          await loadMathJax();
-          renderMathJax();
-        }
       } catch (err) {
         error = 'Error al cargar el preview del artículo';
         console.error('Error en ArticlePreview:', err);
       }
     });
   
-    // Funciones auxiliares
+    afterUpdate(async () => {
+      if (showFullContent && mathJax) {
+        const contentElement = document.getElementById(`content-${article.id}`);
+        if (contentElement) {
+          await mathJax.renderMath(contentElement);
+        }
+      }
+    });
+  
     function truncateHTML(html, maxLength) {
       const tmp = document.createElement('div');
       tmp.innerHTML = DOMPurify.sanitize(html);
-      
+  
       let textContent = tmp.textContent;
       if (textContent.length <= maxLength) return html;
   
-      // Truncar en el último espacio antes del límite
       textContent = textContent.substr(0, maxLength);
       const lastSpace = textContent.lastIndexOf(' ');
       textContent = textContent.substr(0, lastSpace) + '...';
-      
+  
       return textContent;
     }
   
-    async function loadMathJax() {
-    if (window.MathJax) return;
-
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-        script.async = true;
-
-        script.onload = () => {
-            window.MathJax.config = MATHJAX_CONFIG;
-            window.MathJax.startup.getComponents();
-            resolve();
-        };
-
-        script.onerror = () => reject(new Error('Error al cargar MathJax'));
-        document.head.appendChild(script);
-    });
-}
-
-function renderMathJax() {
-    if (window.MathJax && window.MathJax.typesetPromise) {
-        window.MathJax.typesetPromise([contentContainer]).catch(err => console.error('Error al renderizar MathJax:', err));
-    }
-}
-
-  
-    function containsMathContent(content) {
-      const mathPatterns = [/\$.*?\$/, /\\\(.*?\\\)/, /\\\[.*?\\\]/];
-      return mathPatterns.some(pattern => pattern.test(content));
-    }
-  
     function handleAccessRequest() {
-    dispatch('requestAccess', {
-      articleId: article.id,
-      timestamp: new Date().toISOString()
-    });
-    requestSent = true; // Update the state after sending the request
-  }
+      dispatch('requestAccess', {
+        articleId: article.id,
+        timestamp: new Date().toISOString()
+      });
+      requestSent = true;
+    }
   </script>
   
-  <article class="article-preview">
-    {#if error}
-      <div class="error-message" role="alert">
-        {error}
-      </div>
-    {/if}
-  
-    <header class="preview-header">
-      <h2 class="preview-title">{article.title}</h2>
-      <div class="preview-meta">
-        {#if article.author}
-          <span class="author">Por {article.author}</span>
-        {/if}
-        {#if article.publishDate}
-          <span class="date">{new Date(article.publishDate).toLocaleDateString()}</span>
-        {/if}
-        {#if article.readingTime}
-          <span class="reading-time">{article.readingTime} min de lectura</span>
-        {/if}
-      </div>
-    </header>
-  
-    <div 
-      class="preview-content" 
-      bind:this={contentContainer}
-      class:expanded={showFullContent}
-    >
-      {#if showFullContent}
-        {@html DOMPurify.sanitize(article.content)}
-      {:else}
-        {@html truncatedContent}
+<article class="article-preview">
+  {#if error}
+    <div class="error-message" role="alert">
+      {error}
+    </div>
+  {/if}
+
+  <header class="preview-header">
+    <h2 class="preview-title">{article.title}</h2>
+    <div class="preview-meta">
+      {#if article.author}
+        <span class="author">Por {article.author}</span>
+      {/if}
+      {#if article.publishDate}
+        <span class="date">{new Date(article.publishDate).toLocaleDateString()}</span>
+      {/if}
+      {#if article.readingTime}
+        <span class="reading-time">{article.readingTime} min de lectura</span>
       {/if}
     </div>
-  
-    <footer class="preview-footer">
-        <button
-          class="access-button"
-          on:click={handleAccessRequest}
-          disabled={isLoading || requestSent}
-          aria-busy={isLoading}
-        >
-          {#if isLoading}
-            <span class="spinner"></span>
-          {/if}
-          {article.requiresAuth ? (requestSent ? 'Solicitud Enviada' : 'Solicitar Acceso') : 'Leer Más'}
-        </button>
-      </footer>
-  </article>
-  
-  
-  
+  </header>
 
+  <div class="preview-content {showFullContent ? 'expanded' : ''}" id={`content-${article.id}`}>
+    {#if showFullContent}
+      {@html DOMPurify.sanitize(article.content)}
+    {:else}
+      {@html DOMPurify.sanitize(truncatedContent)}
+    {/if}
+  </div>
+
+  <footer class="preview-footer">
+    <button
+      class="access-button"
+      on:click={handleAccessRequest}
+      disabled={isLoading || requestSent}
+      aria-busy={isLoading}
+    >
+      {#if isLoading}
+        <span class="spinner"></span>
+      {/if}
+      {article.requiresAuth ? (requestSent ? 'Solicitud Enviada' : 'Solicitar Acceso') : 'Leer Más'}
+    </button>
+  </footer>
+</article>
+
+
+
+  
   <style>
     .article-preview {
       background: var(--bg-color, #ffffff);
