@@ -10,7 +10,7 @@
   import apiService from '$lib/api/articulos/articulos.js';
 
   /* Componentes */
-  import ArticleHeader from '$lib/components/articulo/id/ArticleHeader.svelte';
+  // import ArticleHeader from '$lib/components/articulo/id/ArticleHeader.svelte';
   import TableOfContents from '$lib/components/articulo/id/TableOfContents.svelte';
   import EnrolledArticle from '$lib/components/articulo/id/EnrolledArticle.svelte';
   import ArticlePreview from '$lib/components/articulo/id/ArticlePreview.svelte';
@@ -26,19 +26,10 @@
   let isLoading = true;
   let error = null;
 
-  // TOC y lectura
-  let toc = [];
-  let activeSection = '';
-  let readingProgress = 0;
-  let lastScrollY = 0;
-  let isHeaderVisible = true;
-  let isTitleProgressVisible = false;
-
   // Interacciones
   let isLiked = false;
   let likesCount = 0;
   let showComments = false;
-  let comments = [];
   let showBottomSheet = false;
   let activeBottomSheetContent = '';
 
@@ -52,24 +43,6 @@
   let isEnrolled = false;
   let enrollmentStatus = null;
   let showEnrollModal = false;
-
-
-  // Listener de scroll
-  function handleScroll() {
-    const currentScrollY = window.scrollY;
-    const scrollingDown = currentScrollY > lastScrollY;
-    isHeaderVisible = !scrollingDown || currentScrollY < 100;
-    isTitleProgressVisible = !scrollingDown && currentScrollY > 100;
-    lastScrollY = currentScrollY;
-
-    // Progreso de lectura
-    const winScroll = document.documentElement.scrollTop;
-    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-    readingProgress = (winScroll / height) * 100;
-
-    // Sección activa
-    updateActiveSection();
-  }
 
   onMount(() => {
     // Detectar si es mobile o vertical
@@ -109,6 +82,25 @@
     };
   });
 
+  // Listener de scroll
+  let readingProgress = 0;
+  let lastScrollY = 0;
+  let isHeaderVisible = true;
+  let isTitleProgressVisible = false;
+
+  function handleScroll() {
+    const currentScrollY = window.scrollY;
+    const scrollingDown = currentScrollY > lastScrollY;
+    isHeaderVisible = !scrollingDown || currentScrollY < 100;
+    isTitleProgressVisible = !scrollingDown && currentScrollY > 100;
+    lastScrollY = currentScrollY;
+
+    // Progreso de lectura
+    const winScroll = document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    readingProgress = (winScroll / height) * 100;
+  }
+
   // Función para abrir el bottom sheet
   function openBottomSheet(content) {
     activeBottomSheetContent = content;
@@ -130,14 +122,12 @@
         articleData,
         enrollmentData,
         statusData,
-        likeData,
-        commentsData
+        likeData
       ] = await Promise.all([
         apiService.fetchArticleById(articleId, token),
         apiService.checkArticleEnrollment(articleId, token),
         apiService.fetchEnrollmentStatus(articleId, token),
-        apiService.fetchLikeStatus(articleId, token),
-        apiService.fetchComments(articleId, token)
+        apiService.fetchLikeStatus(articleId, token)
       ]);
 
       // Validar que 'acceso' exista
@@ -151,76 +141,12 @@
       enrollmentStatus = statusData.status;
       isLiked = likeData.is_liked;
       likesCount = likeData.total_likes;
-      comments = commentsData.results;
-
-      // Generar TOC
-      generateTableOfContents();
 
     } catch (err) {
       console.error('Error loading data:', err);
       error = err.message || 'Hubo un problema al cargar el artículo.';
     } finally {
       isLoading = false;
-    }
-  }
-
-
-  /** Genera la tabla de contenido (TOC) */
-  function generateTableOfContents() {
-    if (!article?.contenido_html) return;
-
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = article.contenido_html;
-    const headings = Array.from(tempDiv.querySelectorAll('h2, h3, h4, h5, h6'));
-
-    toc = headings.map((heading, index) => {
-      const id = `section-${index}`;
-      heading.id = id;
-      return {
-        id,
-        text: heading.textContent.trim(),
-        level: parseInt(heading.tagName.slice(1), 10)
-      };
-    });
-
-    // Reemplazar el HTML con IDs
-    article.contenido_html = tempDiv.innerHTML;
-  }
-
-  function updateActiveSection() {
-    if (!toc.length) return;
-
-    const sections = document.querySelectorAll('h2, h3, h4, h5, h6');
-    let current = '';
-    for (const section of sections) {
-      const rect = section.getBoundingClientRect();
-      if (rect.top <= window.innerHeight / 2) {
-        current = section.id;
-      }
-    }
-    if (current !== activeSection) {
-      activeSection = current;
-    }
-  }
-
-  function scrollToSection(id) {
-    const element = document.getElementById(id);
-    if (!element) return;
-
-    const offset = isMobile || isVertical ? 60 : 80;
-    const elementPosition = element.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-    element.classList.add('highlight-section');
-    setTimeout(() => element.classList.remove('highlight-section'), 2000);
-
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: 'smooth'
-    });
-
-    if (showTocMobile) {
-      showTocMobile = false;
     }
   }
 
@@ -271,53 +197,7 @@
     sound.play();
   }
 
-  /** Manejar comentarios */
-  async function handleComment(content, parentId = null) {
-    try {
-      const token = get(sessionStore).access;
-      if (!token) {
-        throw new Error('Debes iniciar sesión para comentar');
-      }
-      await apiService.postComment(articleId, content, token, parentId);
-      // ... rest of the function ...
-    } catch (error) {
-      console.error('Error posting comment:', error);
-    }
-  }
-
-  /** Manejar "Me gusta" en comentarios */
-  async function handleLikeComment(commentId) {
-    try {
-      const token = get(sessionStore).access;
-      if (!token) {
-        throw new Error('No se proporcionó un token de autenticación');
-      }
-      await apiService.likeComment(commentId, token);
-      await loadInitialData();
-    } catch (error) {
-      console.error('Error liking comment:', error);
-    }
-  }
-
-  async function handleRating(rating) {
-    try {
-      const token = get(sessionStore).access;
-      if (!token) throw new Error('No se proporcionó un token de autenticación');
-
-      await apiService.rateArticle(articleId, rating, token);
-      showBottomSheet = false;
-    } catch (error) {
-      console.error('Error al calificar:', error);
-    }
-  }
-
-  function toggleDarkMode() {
-    isDarkMode = !isDarkMode;
-    document.documentElement.classList.toggle('dark', isDarkMode);
-    localStorage.setItem('darkMode', String(isDarkMode));
-  }
-
-  // Escuchar el evento 'requestEnrollment' del componente EnrollModal
+  // Manejar la solicitud de matriculación desde EnrollModal
   async function handleEnrollment(event) {
     const { motivo } = event.detail;
     try {
@@ -329,8 +209,14 @@
       alert('Solicitud de acceso enviada exitosamente.');
     } catch (err) {
       console.error('Error solicitando matriculación:', err);
-      alert('Hubo un error al enviar la solicitud.');
+      alert(err.message || 'Hubo un error al enviar la solicitud.');
     }
+  }
+
+  function toggleDarkMode() {
+    isDarkMode = !isDarkMode;
+    document.documentElement.classList.toggle('dark', isDarkMode);
+    localStorage.setItem('darkMode', String(isDarkMode));
   }
 
   function openComments() {
@@ -344,14 +230,12 @@
   function toggleTocMobile() {
     showTocMobile = !showTocMobile;
   }
+  function openEnrollModal() {
+    showEnrollModal = true;
+  }
 
-  async function handleAccessRequest(event) {
-    try {
-      const { motivo } = event.detail;
-      showEnrollModal = true;
-    } catch (error) {
-      console.error('Error procesando la solicitud de acceso:', error);
-    }
+  function handleRequestAccess() {
+    openEnrollModal();
   }
 </script>
 
@@ -394,28 +278,24 @@
   <!-- Contenido principal -->
   <div class="article-container">
     <!-- Header del artículo -->
-    {#if article}
+    <!-- {#if article}
       <ArticleHeader
         title={article.titulo}
         author={article.autor.usuario.username}
         date={article.fecha_publicacion}
         category={article.categoria_articulo.nombre}
       />
-    {/if}
+    {/if} -->
 
     <!-- LAYOUT: Grid con 2 columnas: TOC + contenido -->
     <div class="article-layout">
-      {#if (!isMobile && !isVertical) && toc.length}
-        <div class="toc-wrapper">
-          <TableOfContents
-            toc={toc}
-            activeSection={activeSection}
-            onNavigate={scrollToSection}
-            isMobile={false}
-            toggleTOC={toggleTocMobile}
-          />
-        </div>
-      {/if}
+      <TableOfContents
+        articleContent={article?.contenido_html}
+        isMobile={isMobile || isVertical}
+        showTocMobile={showTocMobile}
+        toggleTocMobile={toggleTocMobile}
+        articleId={articleId}
+      />
 
       <article class="article-content-wrapper">
         {#if isLoading}
@@ -441,19 +321,19 @@
               archivo_adjunto={article.archivo_adjunto}
             />
           {:else}
-            <ArticlePreview 
-              article={{
-                id: article.id,
-                title: article.titulo || 'Sin título',
-                content: article.contenido_html || 'Contenido no disponible',
-                previewLength: 300,
-                requiresAuth: article.acceso !== 'gratis',
-                author: article.autor?.usuario?.username || 'Autor desconocido',
-                publishDate: article.fecha_publicacion || '',
-                readingTime: article.tiempo_lectura || ''
-              }}
-              on:requestAccess={handleAccessRequest}
-            />
+          <ArticlePreview 
+          article={{
+            id: article.id,
+            title: article.titulo || 'Sin título',
+            content: article.contenido_html || 'Contenido no disponible',
+            previewLength: 300,
+            requiresAuth: article.acceso !== 'gratis',
+            author: article.autor?.usuario?.username || 'Autor desconocido',
+            publishDate: article.fecha_publicacion || '',
+            readingTime: article.tiempo_lectura || ''
+          }}
+          on:requestAccess={handleRequestAccess}
+        />
           {/if}
         {/if}
       </article>
@@ -468,10 +348,7 @@
         likesCount={likesCount}
         on:like={handleLikeClick}    
         on:comments={openComments}
-        on:rate={() => {
-          showBottomSheet = true;
-          activeBottomSheetContent = 'rating';
-        }}
+        on:rate={() => openBottomSheet('rating')}
         on:toggleDarkMode={toggleDarkMode}
         on:scrollToTop={scrollToTop}
         isDarkMode={isDarkMode}
@@ -485,10 +362,7 @@
         isDarkMode={isDarkMode}
         on:like={handleLikeClick}
         on:comments={openComments}
-        on:rate={() => {
-          showBottomSheet = true;
-          activeBottomSheetContent = 'rating';
-        }}
+        on:rate={() => openBottomSheet('rating')}
         on:toggleDarkMode={toggleDarkMode}
         on:scrollToTop={scrollToTop}
         on:toggleToc={toggleTocMobile}
@@ -499,9 +373,7 @@
   <!-- Panel de comentarios -->
   {#if showComments && (isEnrolled || article?.acceso === 'gratis')}
     <CommentsPanel
-      comments={comments}
-      onPostComment={handleComment}
-      onLikeComment={handleLikeComment} 
+      articleId={articleId}
       onClose={() => (showComments = false)}
     />
   {/if}
@@ -510,12 +382,7 @@
   {#if showBottomSheet}
     <BottomSheet
       activeContent={activeBottomSheetContent}
-      toc={toc}
-      comments={comments}
-      activeSection={activeSection}
-      onNavigate={scrollToSection}
-      onPostComment={handleComment}
-      onRate={handleRating}
+      articleId={articleId}
       onClose={() => {
         showBottomSheet = false;
         activeBottomSheetContent = '';
@@ -525,22 +392,22 @@
 
   <!-- Modal de matrícula -->
   {#if showEnrollModal}
-    <EnrollModal
-      title={article?.titulo}
-      on:requestEnrollment={handleEnrollment}
-      on:close={() => (showEnrollModal = false)}
-    />
+  <EnrollModal
+  title={article?.titulo}
+  on:requestEnrollment={handleEnrollment}
+  on:close={() => (showEnrollModal = false)}
+/>
   {/if}
 
   <!-- TOC en móvil y vertical -->
-  {#if (isMobile || isVertical) && showTocMobile && toc.length}
+  {#if (isMobile || isVertical) && showTocMobile && article?.contenido_html}
     <div class="modal-overlay">
       <TableOfContents
-        toc={toc}
-        activeSection={activeSection}
-        onNavigate={scrollToSection}
+        articleContent={article.contenido_html}
         isMobile={true}
-        toggleTOC={toggleTocMobile}
+        showTocMobile={showTocMobile}
+        toggleTocMobile={toggleTocMobile}
+        articleId={articleId}
       />
     </div>
   {/if}
@@ -639,7 +506,7 @@
     right: 0;
     background-color: var(--background-color2);
     box-shadow: var(--box-shadow);
-    z-index: 2000; /* Superior a la TOC pero inferior a modales */
+    z-index: 999; /* Superior a la TOC pero inferior a modales */
     padding: 1rem;
     backdrop-filter: blur(10px);
   }
@@ -676,20 +543,11 @@
     position: relative;
   }
 
-  /* Envoltorio de la TOC para que sea sticky y se adapte al header */
-  .toc-wrapper {
-    position: sticky;
-    top: 80px; /* Altura del header fijo */
-    max-height: calc(100vh - 140px);
-    overflow-y: auto;
-    z-index: 1500; /* Superior a la mayoría de los elementos */
-  }
-
   .article-content-wrapper {
     background-color: var(--background-color2);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--box-shadow);
-    padding: 2rem;
+    padding: 0rem 2rem;
     transition: all var(--transition-speed);
     min-width: 0;
     position: relative;
@@ -820,11 +678,6 @@
     .article-layout {
       grid-template-columns: 1fr;
     }
-    .toc-wrapper {
-      position: static;
-      max-height: none;
-      margin-bottom: 2rem;
-    }
   }
 
   @media (max-width: 768px), (max-height: 900px) and (min-width: 1200px) {
@@ -844,8 +697,8 @@
       font-size: 1rem;
     }
 
-    .toc-wrapper {
-      display: none; /* Ocultar TOC en desktop cuando es móvil o vertical */
+    .article-layout {
+      grid-template-columns: 1fr;
     }
   }
 
@@ -891,64 +744,9 @@
   }
 
   /* Evitar que la opacidad afecte al contenido del modal */
-  .modal-overlay > * {
+  :global(.modal-overlay > *) {
     position: relative;
     z-index: 1;
   }
 
-  /* Mejoras adicionales */
-  /* Scrollbar personalizado para TOC */
-  .toc-wrapper::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .toc-wrapper::-webkit-scrollbar-track {
-    background: var(--background-color2);
-  }
-
-  .toc-wrapper::-webkit-scrollbar-thumb {
-    background-color: var(--primary-color);
-    border-radius: 4px;
-    border: 2px solid var(--background-color2);
-  }
-
-  /* Scrollbar personalizado para modal TOC */
-  .table-of-contents.mobile .toc-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .table-of-contents.mobile .toc-content::-webkit-scrollbar-track {
-    background: var(--background-color2);
-  }
-
-  .table-of-contents.mobile .toc-content::-webkit-scrollbar-thumb {
-    background-color: var(--primary-color);
-    border-radius: 3px;
-    border: 2px solid var(--background-color2);
-  }
-
-  /* Botón para abrir TOC en móviles y vertical screens */
-  .open-toc-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: var(--box-shadow-elevated);
-    z-index: 2001; /* Superior a otros elementos */
-    transition: background-color var(--transition-speed), transform var(--transition-speed);
-  }
-
-  .open-toc-button:hover {
-    background-color: var(--primary-dark);
-    transform: scale(1.05);
-  }
 </style>

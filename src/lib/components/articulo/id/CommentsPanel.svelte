@@ -1,29 +1,60 @@
-<!-- src/lib/components/articulo/CommentsPanel.svelte -->
+<!-- src/lib/components/articulo/id/CommentsPanel.svelte -->
 <script>
-  import { fade, fly } from 'svelte/transition';
+  import { fade, fly, scale } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
   import Avatar from '$lib/components/articulo/id/Avatar.svelte';
   import { onMount, onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
+  import { sessionStore } from '$lib/stores/sessionStore';
+  import apiService from '$lib/api/articulos/articulos.js';
 
-  // Props que recibe el componente
-  export let comments = [];
-  export let onPostComment; // Función para publicar un comentario
-  export let onClose; // Función para cerrar el panel de comentarios
-  export let onLikeComment; // Función para manejar el "Me gusta"
+  import { Howl } from 'howler';
 
-  // Estado del componente
+  export let articleId = '';
+  export let onClose;
+
+  // Estado
+  let comments = [];
   let newComment = '';
   let isSubmitting = false;
-  let replyingTo = null; // ID del comentario al que se responde
-  let replyContent = ''; // Contenido de la respuesta
+  let replyingTo = null;
+  let replyContent = '';
+  let isLoading = true;
+  let error = null;
 
-  // Función para enviar un comentario o una respuesta
+  // Fetch comments
+  async function fetchComments() {
+    isLoading = true;
+    error = null;
+    try {
+      const token = get(sessionStore).access;
+      if (!token) throw new Error('No se encontró token de autenticación');
+
+      const commentsData = await apiService.fetchComments(articleId, token);
+      comments = commentsData.results;
+    } catch (err) {
+      console.error('Error fetching comments:', err);
+      error = err.message || 'Hubo un problema al cargar los comentarios.';
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Función para enviar comentarios o respuestas
   async function enviarComentario(content, parentId = null) {
     if (!content.trim()) return;
 
     isSubmitting = true;
 
     try {
-      await onPostComment(content, parentId);
+      const token = get(sessionStore).access;
+      if (!token) {
+        throw new Error('Debes iniciar sesión para comentar');
+      }
+      await apiService.postComment(articleId, content, token, parentId);
+      // Reload comments
+      await fetchComments();
+
       if (parentId) {
         replyContent = '';
         replyingTo = null;
@@ -32,18 +63,16 @@
       }
     } catch (error) {
       console.error('Error al enviar el comentario:', error);
-      // Opcional: puedes emitir un evento para manejar errores a un componente padre
-      dispatch('error', { message: 'No se pudo enviar el comentario. Inténtalo de nuevo.' });
+      alert('Hubo un error al enviar el comentario.');
     } finally {
       isSubmitting = false;
     }
   }
 
-  // Función para iniciar una respuesta a un comentario
+  // Función para iniciar una respuesta
   function startReply(commentId) {
     replyingTo = commentId;
     replyContent = '';
-    // Opcional: enfocar el textarea automáticamente
     setTimeout(() => {
       const textarea = document.getElementById(`reply-textarea-${commentId}`);
       if (textarea) textarea.focus();
@@ -56,41 +85,58 @@
     replyContent = '';
   }
 
-  // Función para manejar la respuesta al enviar
+  // Función para manejar la respuesta
   function handleReply(commentId, content) {
     enviarComentario(content, commentId);
   }
 
-  // Función para cerrar el panel al presionar "Esc"
+  // Función para cerrar el panel con "Esc"
   function handleKeydown(event) {
     if (event.key === 'Escape') {
       onClose();
     }
   }
 
-  // Escuchar eventos de teclado cuando el panel está abierto
+  // Función para manejar "Me gusta" en comentarios
+  async function enviarLikeComment(commentId) {
+    try {
+      const token = get(sessionStore).access;
+      if (!token) {
+        throw new Error('No se proporcionó un token de autenticación');
+      }
+      await apiService.likeComment(commentId, token);
+      await fetchComments();
+    } catch (error) {
+      console.error('Error liking comment:', error);
+      alert('Hubo un error al dar "Me gusta" al comentario.');
+    }
+  }
+
+  // Escuchar eventos de teclado
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
+    fetchComments();
   });
   onDestroy(() => {
     window.removeEventListener('keydown', handleKeydown);
   });
 </script>
 
-<!-- Overlay para oscurecer el fondo y cerrar el panel al hacer clic fuera -->
-<div
+<!-- Overlay -->
+<button
+  type="button"
   class="comments-overlay"
   on:click={onClose}
-  on:keydown={(e) => e.key === 'Enter' && onClose()}
-  role="button"
-  tabindex="0"
-  aria-label="Cerrar comentarios"
-  transition:fade
-></div>
+  aria-label="Cerrar panel de comentarios"
+  transition:fade={{ duration: 300 }}
+></button>
 
 <!-- Panel de comentarios -->
-<aside class="comments-panel" transition:fly={{ x: 400, duration: 300 }}>
-  <!-- Encabezado del panel -->
+<aside
+  class="comments-panel"
+  transition:fly={{ x: 400, duration: 500, easing: quintOut }}
+>
+  <!-- Encabezado -->
   <header class="panel-header">
     <h2 class="panel-title">
       <i class="fas fa-comments"></i>
@@ -101,11 +147,24 @@
     </button>
   </header>
 
-  <!-- Contenido del panel -->
+  <!-- Contenido -->
   <div class="panel-content">
-    {#if comments.length === 0}
-      <!-- Estado vacío cuando no hay comentarios -->
-      <div class="empty-state" transition:fade>
+    {#if isLoading}
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando comentarios...</p>
+      </div>
+    {:else if error}
+      <div class="error-state">
+        <i class="fas fa-exclamation-circle"></i>
+        <h3>Error al cargar los comentarios</h3>
+        <p>{error}</p>
+        <button class="retry-button" on:click={fetchComments}>
+          Intentar de nuevo
+        </button>
+      </div>
+    {:else if comments.length === 0}
+      <div class="empty-state" transition:scale={{ duration: 300 }}>
         <div class="empty-icon">
           <i class="far fa-comments"></i>
         </div>
@@ -113,113 +172,108 @@
         <p>¡Sé el primero en iniciar la discusión!</p>
       </div>
     {:else}
-      <!-- Lista de comentarios -->
       <div class="comments-list">
         {#each comments as comment (comment.id)}
-		<article class="comment-card" transition:fade>
-			<header class="comment-header">
-				<Avatar size="48" username={comment.usuario.username} />
-				<div class="comment-meta">
-					<h3 class="author">{comment.usuario.username}</h3>
-					<span class="date"
-						>{new Date(comment.fecha_creacion).toLocaleDateString()}</span
-					>
-				</div>
-			</header>
+          <article class="comment-card" transition:fade={{ duration: 300 }}>
+            <header class="comment-header">
+              <Avatar size="48" username={comment.usuario.username} />
+              <div class="comment-meta">
+                <h3 class="author">{comment.usuario.username}</h3>
+                <span class="date">
+                  {new Date(comment.fecha_creacion).toLocaleDateString()}
+                </span>
+              </div>
+            </header>
 
-			<div class="comment-content">
-				<p>{comment.contenido}</p>
-			</div>
+            <div class="comment-content">
+              <p>{comment.contenido}</p>
+            </div>
 
-			<footer class="comment-actions">
-				<button
-					class="action-button reply"
-					on:click|stopPropagation={() => startReply(comment.id)}
-				>
-					<i class="far fa-comment"></i>
-					Responder
-				</button>
-				<button
-					class="action-button like"
-					on:click|stopPropagation={() => onLikeComment(comment.id)}
-				>
-					<i class="far fa-thumbs-up"></i>
-					{comment.likes_count > 0 ? comment.likes_count : 'Me gusta'}
-				</button>
-			</footer>
+            <footer class="comment-actions">
+              <button
+                class="action-button reply"
+                on:click|stopPropagation={() => startReply(comment.id)}
+              >
+                <i class="far fa-comment"></i>
+                Responder
+              </button>
+              <button
+                class="action-button like"
+                on:click|stopPropagation={() => enviarLikeComment(comment.id)}
+              >
+                <i class="far fa-thumbs-up"></i>
+                {comment.likes_count > 0 ? comment.likes_count : 'Me gusta'}
+              </button>
+            </footer>
 
-			{#if replyingTo === comment.id}
-				<div class="reply-form" transition:fly={{ y: 20, duration: 300 }}>
-					<textarea
-  id={`reply-textarea-${comment.id}`}
-  bind:value={replyContent}
-  placeholder="Escribe tu respuesta..."
-  rows="3"
-  aria-label="Responder al comentario"
-></textarea>
-					<div class="form-actions">
-						<button class="action-button cancel" on:click={cancelReply}>
-							Cancelar
-						</button>
-						<button
-							class="action-button submit"
-							on:click={() => handleReply(replyingTo, replyContent)}
-							disabled={!replyContent.trim() || isSubmitting}
-						>
-							{#if isSubmitting}
-								<i class="fas fa-spinner fa-spin"></i>
-								Enviando...
-							{:else}
-								<i class="fas fa-paper-plane"></i>
-								Enviar respuesta
-							{/if}
-						</button>
-					</div>
-				</div>
-			{/if}
+            {#if replyingTo === comment.id}
+              <div class="reply-form" transition:fly={{ y: 20, duration: 300 }}>
+                <textarea
+                  id={`reply-textarea-${comment.id}`}
+                  bind:value={replyContent}
+                  placeholder="Escribe tu respuesta..."
+                  rows="3"
+                  aria-label="Responder al comentario"
+                ></textarea>
+                <div class="form-actions">
+                  <button class="action-button cancel" on:click={cancelReply}>
+                    Cancelar
+                  </button>
+                  <button
+                    class="action-button submit"
+                    on:click={() => handleReply(replyingTo, replyContent)}
+                    disabled={!replyContent.trim() || isSubmitting}
+                  >
+                    {#if isSubmitting}
+                      <i class="fas fa-spinner fa-spin"></i>
+                      Enviando...
+                    {:else}
+                      <i class="fas fa-paper-plane"></i>
+                      Enviar respuesta
+                    {/if}
+                  </button>
+                </div>
+              </div>
+            {/if}
 
-			{#if comment.respuestas && comment.respuestas.length > 0}
-				<div class="replies">
-					{#each comment.respuestas as respuesta (respuesta.id)}
-						<article class="comment-card reply" transition:fade>
-							<header class="comment-header">
-								<Avatar size="48" username={respuesta.usuario.username} />
-								<div class="comment-meta">
-									<h3 class="author">{respuesta.usuario.username}</h3>
-									<span class="date"
-										>{new Date(
-											respuesta.fecha_creacion
-										).toLocaleDateString()}</span
-									>
-								</div>
-							</header>
+            {#if comment.respuestas && comment.respuestas.length > 0}
+              <div class="replies">
+                {#each comment.respuestas as respuesta (respuesta.id)}
+                  <article class="comment-card reply" transition:fade={{ duration: 300 }}>
+                    <header class="comment-header">
+                      <Avatar size="48" username={respuesta.usuario.username} />
+                      <div class="comment-meta">
+                        <h3 class="author">{respuesta.usuario.username}</h3>
+                        <span class="date">
+                          {new Date(respuesta.fecha_creacion).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </header>
 
-							<div class="comment-content">
-								<p>{respuesta.contenido}</p>
-							</div>
+                    <div class="comment-content">
+                      <p>{respuesta.contenido}</p>
+                    </div>
 
-							<footer class="comment-actions">
-								<button
-									class="action-button like"
-									on:click|stopPropagation={() => onLikeComment(respuesta.id)}
-								>
-									<i class="far fa-thumbs-up"></i>
-									{respuesta.likes_count > 0
-										? respuesta.likes_count
-										: 'Me gusta'}
-								</button>
-							</footer>
-						</article>
-          {/each}
-        </div>
-      {/if}
-    </article>
-    {/each}
+                    <footer class="comment-actions">
+                      <button
+                        class="action-button like"
+                        on:click|stopPropagation={() => enviarLikeComment(respuesta.id)}
+                      >
+                        <i class="far fa-thumbs-up"></i>
+                        {respuesta.likes_count > 0 ? respuesta.likes_count : 'Me gusta'}
+                      </button>
+                    </footer>
+                  </article>
+                {/each}
+              </div>
+            {/if}
+          </article>
+        {/each}
       </div>
     {/if}
   </div>
 
-  <!-- Pie del panel con formulario para agregar nuevos comentarios -->
+  <!-- Pie del panel -->
   <footer class="panel-footer">
     <div class="comment-form">
       <textarea
@@ -256,18 +310,17 @@
 </aside>
 
 <style>
-  /* Variables de color para facilitar la personalización */
   :root {
-    --primary-color: #4f46e5; /* Indigo-600 */
-    --primary-dark: #4338ca; /* Indigo-700 */
-    --secondary-color: #818cf8; /* Indigo-300 */
-    --background-color2: #f9fafb; /* Gray-50 */
+    --primary-color: #6d28d9; /* Violet-600 */
+    --primary-dark: #5b21b6; /* Violet-700 */
+    --secondary-color: #8b5cf6; /* Violet-400 */
+    --background-color2: #f8fafc; /* Gray-50 */
     --background-elevated: #ffffff;
-    --text-color: #1f2937; /* Gray-800 */
-    --text-color-lighter: #6b7280; /* Gray-500 */
-    --text-rgb: 31, 41, 55; /* Gray-800 RGB */
-    --primary-rgb: 79, 70, 229; /* Indigo-600 RGB */
-    --border-radius: 0.5rem; /* 8px */
+    --text-color: #1e293b; /* Gray-800 */
+    --text-color-lighter: #64748b; /* Gray-500 */
+    --text-rgb: 30, 41, 59; /* Gray-800 RGB */
+    --primary-rgb: 109, 40, 217; /* Violet-600 RGB */
+    --border-radius: 0.75rem; /* 12px */
     --transition-speed: 0.3s;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
@@ -279,8 +332,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
     z-index: 1000;
   }
 
@@ -293,10 +346,10 @@
     max-width: 600px;
     height: 100vh;
     background-color: var(--background-elevated);
-    z-index: 1001;
+    z-index: 100100;
     display: flex;
     flex-direction: column;
-    box-shadow: -4px 0 25px rgba(0, 0, 0, 0.1);
+    box-shadow: -4px 0 25px rgba(0, 0, 0, 0.2);
     overflow: hidden;
   }
 
@@ -444,8 +497,6 @@
     border-top: 1px solid rgba(var(--text-rgb), 0.1);
   }
 
-  /* Continuación del código de CommentsPanel.svelte */
-
   .action-button {
     background: none;
     border: none;
@@ -570,6 +621,8 @@
       max-width: none;
     }
   }
+
+  /* Respuestas */
   .replies {
     margin-top: 1rem;
     padding-left: 2rem;

@@ -1,22 +1,17 @@
 <!-- Este componente se encarga de renderizar el contenido de un artículo, procesando y mejorando el HTML recibido. También se encarga de renderizar las ecuaciones matemáticas con MathJax. -->
 <!-- lib/components/articulo/ArticleContent.svelte -->
 <script>
-  import { onMount, afterUpdate, getContext } from 'svelte';
-  import { fade } from 'svelte/transition';
+  import { onMount } from 'svelte';
   import DOMPurify from 'dompurify';
-
-  // Get MathJax context
-  const mathJax = getContext('mathjax');
 
   export let contenido_html = '';
   export let isPreview = false;
 
-  // Función para procesar y mejorar el contenido
-  function enhanceContent() {
-    if (!contenido_html) return;
+  let processedContent = '';
 
+  function enhanceContent(html) {
     const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = DOMPurify.sanitize(contenido_html);
+    tempDiv.innerHTML = DOMPurify.sanitize(html);
 
     // Procesar imágenes
     tempDiv.querySelectorAll('img').forEach(img => {
@@ -26,73 +21,55 @@
       img.classList.add('article-image');
       img.setAttribute('loading', 'lazy');
 
-      if (img.getAttribute('alt')) {
-        caption.textContent = img.getAttribute('alt');
-        img.parentNode.insertBefore(figure, img);
-        figure.appendChild(img);
-        figure.appendChild(caption);
+      if (img.alt) {
+        caption.textContent = img.alt;
+        img.replaceWith(figure);
+        figure.append(img, caption);
       }
     });
 
-    // Mejorar tablas
+    // Procesar tablas
     tempDiv.querySelectorAll('table').forEach(table => {
       const wrapper = document.createElement('div');
       wrapper.className = 'table-wrapper';
-      table.parentNode.insertBefore(wrapper, table);
-      wrapper.appendChild(table);
+      table.replaceWith(wrapper);
+      wrapper.append(table);
     });
 
-    // Mejorar bloques de código
-    tempDiv.querySelectorAll('pre code').forEach(code => {
-      const pre = code.parentElement;
-      pre.classList.add('code-block');
-
-      const copyButton = document.createElement('button');
-      copyButton.className = 'copy-button';
-      copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-      copyButton.onclick = () => {
-        navigator.clipboard.writeText(code.textContent);
-        copyButton.innerHTML = '<i class="fas fa-check"></i>';
-        setTimeout(() => {
-          copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-        }, 2000);
-      };
-      pre.appendChild(copyButton);
-    });
-
-    contenido_html = tempDiv.innerHTML;
-  }
-
-  async function renderMath() {
-    if (mathJax && typeof mathJax.renderMath === 'function') {
-      const contentElement = document.querySelector('.article-content');
-      if (contentElement) {
-        try {
-          await mathJax.renderMath(contentElement);
-        } catch (error) {
-          console.error('Error rendering math:', error);
-        }
-      }
-    }
+    return tempDiv.innerHTML;
   }
 
   onMount(() => {
-    enhanceContent();
-    renderMath(); // Renderiza las ecuaciones al montar
-  });
+    processedContent = enhanceContent(contenido_html);
 
-  afterUpdate(() => {
-    renderMath(); // Vuelve a renderizar si el contenido cambia
+    if (!window.MathJax) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.async = true;
+
+      script.onload = () => {
+        console.log('MathJax cargado');
+        window.MathJax.startup.promise.then(() => {
+          window.MathJax.typeset();
+        });
+      };
+
+      script.onerror = () => {
+        console.error('No se pudo cargar MathJax.');
+      };
+
+      document.head.appendChild(script);
+    } else {
+      window.MathJax.startup.promise.then(() => {
+        window.MathJax.typeset();
+      });
+    }
   });
 </script>
 
-<article 
-  class="article-content {isPreview ? 'preview' : ''}"
-  transition:fade={{ duration: 300 }}
->
-  {@html contenido_html}
+<article class="article-content {isPreview ? 'preview' : ''}">
+  {@html processedContent || contenido_html}
 </article>
-
 
 
 <style>

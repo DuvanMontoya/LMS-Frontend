@@ -1,55 +1,122 @@
 <!-- src/lib/components/articulo/TableOfContents.svelte -->
 <script>
   import { onMount, onDestroy } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
   import { tick } from 'svelte';
 
-  export let toc = [];
-  export let activeSection = "";
-  export let onNavigate = () => {};
+  export let articleContent = '';
   export let isMobile = false;
-  export let toggleTOC = () => {};
+  export let showTocMobile = false;
+  export let toggleTocMobile = () => {};
+  export const articleId = '';
 
+  const dispatch = createEventDispatcher();
+
+  let toc = [];
+  let activeSection = '';
   let tocElement;
-  let isSticky = false;
 
-  let observer;
+  // Funciones para generar TOC
+  function generateTableOfContents() {
+    if (!articleContent) return;
 
-  onMount(() => {
-    if (!isMobile) {
-      observer = new IntersectionObserver(
-        ([e]) => isSticky = e.intersectionRatio < 1,
-        { threshold: [1] }
-      );
-      if (tocElement) {
-        observer.observe(tocElement);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = articleContent;
+    const headings = Array.from(tempDiv.querySelectorAll('h2, h3, h4, h5, h6'));
+
+    toc = headings.map((heading, index) => {
+      const id = `section-${index}`;
+      heading.id = id;
+      return {
+        id,
+        text: heading.textContent.trim(),
+        level: parseInt(heading.tagName.slice(1), 10)
+      };
+    });
+
+    // Reemplazar el HTML con IDs
+    articleContent = tempDiv.innerHTML;
+  }
+
+  // Función para actualizar la sección activa
+  function updateActiveSection() {
+    if (!toc.length) return;
+
+    const sections = document.querySelectorAll('h2, h3, h4, h5, h6');
+    let current = '';
+    for (const section of sections) {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= window.innerHeight / 2) {
+        current = section.id;
       }
     }
+    if (current !== activeSection) {
+      activeSection = current;
+      dispatch('activeSectionChange', activeSection);
+    }
+  }
+
+  // Scroll to sección
+  function scrollToSection(id) {
+    const element = document.getElementById(id);
+    if (!element) return;
+
+    const offset = isMobile || (window.matchMedia('(max-height: 900px) and (min-width: 1200px)').matches) ? 60 : 80;
+    const elementPosition = element.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+    element.classList.add('highlight-section');
+    setTimeout(() => element.classList.remove('highlight-section'), 2000);
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
+
+    if (isMobile && showTocMobile) {
+      toggleTocMobile();
+    }
+  }
+
+  // Listener para scroll
+  let scrollListener;
+
+  onMount(() => {
+    generateTableOfContents();
+
+    scrollListener = () => {
+      updateActiveSection();
+    };
+
+    window.addEventListener('scroll', scrollListener, { passive: true });
 
     return () => {
-      if (observer && tocElement) {
-        observer.unobserve(tocElement);
-      }
+      window.removeEventListener('scroll', scrollListener);
     };
   });
 
-  // Scroll TOC to active item when activeSection changes
+  // Actualizar TOC cuando cambia el contenido
+  $: if (articleContent) {
+    generateTableOfContents();
+  }
+
+  // Scroll automático al cambiar sección activa
   $: if (activeSection && tocElement) {
     const activeItem = tocElement.querySelector(`.toc-item.active`);
     if (activeItem) {
-      // Scroll the active item into view within the TOC
       activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
 </script>
 
 <nav 
-  class="table-of-contents {isMobile ? 'mobile' : ''} {isSticky ? 'sticky' : ''}"
+  class="table-of-contents {isMobile ? 'mobile' : ''}"
   bind:this={tocElement}
 >
   <div class="toc-header">
     <h2>Contenido del Artículo</h2>
     {#if isMobile}
-      <button class="close-button" on:click={toggleTOC} aria-label="Cerrar tabla de contenido">
+      <button class="close-button" on:click={toggleTocMobile} aria-label="Cerrar tabla de contenido">
         <i class="fas fa-times"></i>
       </button>
     {/if}
@@ -59,7 +126,7 @@
     {#each toc as item}
       <button
         class="toc-item level-{item.level} {activeSection === item.id ? 'active' : ''}"
-        on:click={() => onNavigate(item.id)}
+        on:click={() => scrollToSection(item.id)}
       >
         <div class="toc-marker">
           <div class="marker-dot"></div>
@@ -82,16 +149,11 @@
     margin-right: 2rem;
     border: 1px solid rgba(var(--primary-rgb), 0.1);
     position: relative;
-    z-index: 1500; /* Asegurar que esté por encima de otros contenidos pero por debajo de modales */
+    z-index: 900; /* Asegurar que esté por encima de otros contenidos pero por debajo de modales */
     transition: all var(--transition-speed);
     max-height: calc(100vh - 2rem);
     display: flex;
     flex-direction: column;
-  }
-
-  .table-of-contents.sticky {
-    position: fixed;
-    top: 80px; /* Ajustado para coincidir con el header fijo */
   }
 
   .toc-header {
@@ -101,16 +163,9 @@
     border-top-right-radius: var(--border-radius);
     position: relative;
     overflow: hidden;
-  }
-
-  .toc-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zM22.344 0L13.858 8.485 15.272 9.9l7.9-7.9h-.828zm5.656 0L19.515 8.485 17.343 10.657 28 0h-2.83zM32.656 0L41.142 8.485 39.728 9.9l-7.9-7.9h.828zm5.656 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zm5.657 0l8.485 8.485-1.414 1.414-7.9-7.9h.83zM2.828 0L0 2.828v2.83L5.657 0H2.828zM54.627 60l.83-.828-1.415-1.415L51.8 60h2.827zM5.373 60l-.83-.828L5.96 57.757 8.2 60H5.374zM48.97 60l3.657-3.657-1.414-1.414L46.143 60h2.828zM11.03 60L7.372 56.343 8.787 54.93 13.857 60H11.03zm32.284 60L49.8 53.515l-1.414-1.414-7.9 7.9h2.83zM16.686 60L10.2 53.515l1.414-1.414 7.9 7.9h-2.83zM22.344 60L13.858 51.515l1.414-1.414 7.9 7.9h-.828zm5.656 60l-8.485-8.485-2.172-2.172L28 60h-2.83zM32.656 60l8.486-8.485-1.414-1.414-7.9 7.9h.828zm5.656 60l8.485-8.485-1.414-1.414-7.9 7.9h.83zm5.657 60l8.485-8.485-1.414-1.414-7.9 7.9h.83zM2.828 60L0 57.172v-2.83L5.657 60H2.828z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E") center/60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .toc-header h2 {
@@ -123,16 +178,14 @@
   }
 
   .close-button {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
     background: none;
     border: none;
     color: white;
-    padding: 0.5rem;
+    font-size: 1.2rem;
     cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
     transition: transform var(--transition-speed);
-    z-index: 1;
   }
 
   .close-button:hover {
@@ -234,7 +287,7 @@
     max-width: 350px;
     height: 100vh;
     margin: 0;
-    z-index: 1000; /* Superior a la TOC en desktop */
+    z-index: 900; /* Superior a la TOC en desktop */
     border-radius: 0;
     box-shadow: var(--box-shadow-elevated);
     animation: slideIn 0.3s ease;
