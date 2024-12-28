@@ -1,39 +1,33 @@
 <script>
-  /************************************************************
-   * IMPORTS
-   ************************************************************/
   import { fade, fly, slide, scale } from 'svelte/transition';
-  import { quintOut, elasticOut, backOut } from 'svelte/easing';
+  import { backOut } from 'svelte/easing';
   import { flip } from 'svelte/animate';
   import { onMount, onDestroy, tick } from 'svelte';
   import { get } from 'svelte/store';
-  import { sessionStore } from '$lib/stores/sessionStore'; // Ajusta si tu store está en otro lugar
-  import apiService from '$lib/api/articulos/articulos.js'; // Ajusta si tu service está en otro lugar
+  import { sessionStore } from '$lib/stores/sessionStore';
+  import apiService from '$lib/api/articulos/articulos.js';
   import { Howl } from 'howler';
 
-  /************************************************************
-   * PROPS
-   ************************************************************/
   export let articleId = '';
-  export let onClose; // Función callback para cerrar
+  export let onClose;
 
-  /************************************************************
-   * STATE - Estructuras de datos
-   ************************************************************/
-  let commentsMap = new Map(); // Para acceso O(1) por id
-  let rootComments = [];       // Lista de comentarios raíz
-  let replyTo = null;          // A quién estoy respondiendo
-  let replyContent = '';       // Texto de la respuesta
-  let isLoading = true;        // Estado de carga
-  let error = null;            // Errores
+  // Estado principal
+  let commentsMap = new Map();
+  let rootComments = [];
+  let isLoading = true;
+  let error = null;
+
+  // Estado de respuestas y formularios
+  let replyTo = null;
+  let newCommentContent = ''; // Para comentarios nuevos
+  let replyContent = '';      // Para respuestas
   let optimisticUpdates = new Map();
+
+  // Sistema de notificaciones
   let notifications = [];
   let notificationId = 0;
 
-  // Control de animaciones
-  let animations = true;
-
-  // Sonidos
+  // Efectos de sonido
   const sounds = {
     submit: new Howl({ src: ['/sounds/comment-submit.mp3'], volume: 0.5 }),
     like: new Howl({ src: ['/sounds/like-action.mp3'], volume: 0.3 }),
@@ -41,63 +35,60 @@
     error: new Howl({ src: ['/sounds/error-notif.mp3'], volume: 0.4 })
   };
 
-  /************************************************************
-   * FUNCIONES para Estructurar Comentarios
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Estructurar la jerarquía de comentarios a partir del campo "padre"
+  // ------------------------------------------------------------------
   function structureComments(rawComments) {
-    // Limpiar el mapa
-    commentsMap.clear();
+    const map = new Map();
     const roots = [];
 
-    // Inicialmente, mapear todos los comentarios
-    rawComments.forEach((comment) => {
-      comment.replies = [];
-      commentsMap.set(comment.id, comment);
+    // Crear objetos base
+    rawComments.forEach(comment => {
+      const commentObj = {
+        ...comment,
+        isLikedByMe: comment.liked,
+        likes_count: comment.likes_count,
+        replies: [],
+        isOptimistic: false
+      };
+      map.set(comment.id, commentObj);
     });
 
-    // Construir jerarquía
-    rawComments.forEach((comment) => {
-      if (comment.parent_id) {
-        const parent = commentsMap.get(comment.parent_id);
+    // Construir la jerarquía
+    rawComments.forEach(comment => {
+      const commentObj = map.get(comment.id);
+      if (comment.padre) {
+        const parent = map.get(comment.padre);
         if (parent) {
-          parent.replies.push(comment);
+          parent.replies.push(commentObj);
+        } else {
+          // Si no se encuentra el padre, agrégalo a la raíz
+          roots.push(commentObj);
         }
       } else {
-        roots.push(comment);
+        // Sin padre => raíz
+        roots.push(commentObj);
       }
     });
 
-    // Ordenar replies dentro de cada padre
-    commentsMap.forEach((c) => {
-      c.replies.sort(
-        (a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion)
-      );
+    // Ordenar por fecha creación desc
+    const sortByDateDesc = (a, b) =>
+      new Date(b.fecha_creacion) - new Date(a.fecha_creacion);
+
+    // Ordenar replies en cada comentario
+    map.forEach(c => {
+      c.replies.sort(sortByDateDesc);
     });
 
     // Ordenar comentarios raíz
-    roots.sort((a, b) => new Date(b.fecha_creacion) - new Date(a.fecha_creacion));
-    return roots;
+    roots.sort(sortByDateDesc);
+
+    return { map, roots };
   }
 
-  /************************************************************
-   * SISTEMA de NOTIFICACIONES
-   ************************************************************/
-  function showNotification(message, type = 'info', duration = 3000) {
-    const id = notificationId++;
-    const notification = { id, message, type };
-    notifications = [...notifications, notification];
-
-    // Sonido si es error
-    if (type === 'error') sounds.error.play();
-
-    setTimeout(() => {
-      notifications = notifications.filter(n => n.id !== id);
-    }, duration);
-  }
-
-  /************************************************************
-   * FETCH (comentarios) 
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Cargar comentarios desde el backend
+  // ------------------------------------------------------------------
   async function fetchComments(silent = false) {
     if (!silent) isLoading = true;
     error = null;
@@ -105,7 +96,15 @@
     try {
       const token = get(sessionStore).access;
       const response = await apiService.fetchComments(articleId, token);
-      rootComments = structureComments(response.results);
+
+      // Asegúrate de ajustar según tu respuesta real:
+      // p.ej. si tu backend retorna array:  rawComments = response
+      // o si retorna con paginación:       rawComments = response.results
+      const rawComments = Array.isArray(response) ? response : response.results;
+
+      const { map, roots } = structureComments(rawComments);
+      commentsMap = map;
+      rootComments = roots;
 
       if (!silent) {
         showNotification('Comentarios actualizados', 'success');
@@ -119,18 +118,17 @@
     }
   }
 
-  /************************************************************
-   * Crear o responder un comentario (Optimista)
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Publicar un comentario nuevo (raíz o respuesta)
+  // ------------------------------------------------------------------
   async function submitComment(content, parentId = null) {
-    // Validar
     if (!content.trim()) return;
 
     const timestamp = Date.now();
     const optimisticId = `temp-${timestamp}`;
     const username = get(sessionStore).username || 'Desconocido';
 
-    // Crear objeto de comentario "optimista"
+    // Comentario optimista
     const optimisticComment = {
       id: optimisticId,
       contenido: content,
@@ -138,99 +136,125 @@
       usuario: { username },
       likes_count: 0,
       isLikedByMe: false,
-      parent_id: parentId,
+      padre: parentId,
       replies: [],
       isOptimistic: true
     };
 
-    // Insertar en UI
     try {
+      // Insertarlo localmente
+      commentsMap.set(optimisticId, optimisticComment);
+
       if (parentId) {
-        // Respuesta a un comentario
         const parentComment = commentsMap.get(parentId);
         if (parentComment) {
           parentComment.replies.unshift(optimisticComment);
-          // Limpiar formulario de respuesta
-          replyTo = null;
           replyContent = '';
+          replyTo = null;
+        } else {
+          // Padre no encontrado => raíz
+          rootComments.unshift(optimisticComment);
+          newCommentContent = '';
         }
       } else {
         // Comentario raíz
         rootComments.unshift(optimisticComment);
-        // Limpiar el textarea de nuevo comentario
-        replyContent = '';
+        newCommentContent = '';
       }
 
-      // Animación y sonido
+      // Forzar actualización
+      commentsMap = commentsMap;
+      rootComments = rootComments;
+
+      // Sonido + animación
       sounds.submit.play();
       await animateSuccess(optimisticId);
 
-      // Llamar API real
+      // Petición real al servidor
       const token = get(sessionStore).access;
       await apiService.postComment(articleId, content, token, parentId);
 
-      // Actualizar silenciosamente
+      // Refrescar para obtener ID real y subcomentarios actualizados
       await fetchComments(true);
 
       showNotification('¡Comentario publicado con éxito!', 'success');
-    } catch (error) {
-      console.error('Error al publicar comentario:', error);
+    } catch (e) {
+      console.error('Error al publicar comentario:', e);
 
       // Revertir
+      commentsMap.delete(optimisticId);
       if (parentId) {
         const parentComment = commentsMap.get(parentId);
         if (parentComment) {
-          parentComment.replies = parentComment.replies.filter(
-            (r) => r.id !== optimisticId
-          );
+          parentComment.replies = parentComment.replies.filter(r => r.id !== optimisticId);
         }
       } else {
-        rootComments = rootComments.filter((c) => c.id !== optimisticId);
+        rootComments = rootComments.filter(rc => rc.id !== optimisticId);
       }
 
       showNotification('No se pudo publicar el comentario', 'error');
     }
   }
 
-  /************************************************************
-   * Manejo de LIKES
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Manejar "Me gusta" / "No me gusta" en comentarios
+  // ------------------------------------------------------------------
   async function handleLike(commentId) {
-    // Evitar doble click
-    if (optimisticUpdates.get(commentId)) return;
-    optimisticUpdates.set(commentId, true);
-
+    if (optimisticUpdates.has(commentId)) return;
     const comment = commentsMap.get(commentId);
     if (!comment) return;
 
-    // Sumar like localmente
-    comment.likes_count++;
-    comment.isLikedByMe = true;
+    optimisticUpdates.set(commentId, true);
 
-    // Sonido + animación
-    sounds.like.play();
-    await animateLike(commentId);
-
-    // Llamar API
     try {
+      const wasLiked = comment.isLikedByMe;
+      comment.isLikedByMe = !wasLiked;
+      comment.likes_count += wasLiked ? -1 : 1;
+
+      commentsMap = commentsMap;
+      sounds.like.play();
+      await animateLike(commentId);
+
+      // Llamada al backend
       const token = get(sessionStore).access;
       await apiService.likeComment(commentId, token);
-      // Actualizar (silent)
+
+      // Refrescar
       await fetchComments(true);
     } catch (error) {
-      console.error('Error en like:', error);
+      console.error('Error toggling like:', error);
+
       // Revertir
-      comment.likes_count--;
-      comment.isLikedByMe = false;
-      showNotification('No se pudo registrar el "Me gusta"', 'error');
+      comment.isLikedByMe = !comment.isLikedByMe;
+      comment.likes_count += comment.isLikedByMe ? 1 : -1;
+
+      showNotification('No se pudo procesar el "Me gusta"', 'error');
     } finally {
+      commentsMap = commentsMap;
       optimisticUpdates.delete(commentId);
     }
   }
 
-  /************************************************************
-   * Animaciones personalizadas
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Sistema de notificaciones local
+  // ------------------------------------------------------------------
+  function showNotification(message, type = 'info', duration = 3000) {
+    const id = notificationId++;
+    const notification = { id, message, type };
+    notifications = [...notifications, notification];
+
+    if (type === 'error') {
+      sounds.error.play();
+    }
+
+    setTimeout(() => {
+      notifications = notifications.filter(n => n.id !== id);
+    }, duration);
+  }
+
+  // ------------------------------------------------------------------
+  // Animaciones
+  // ------------------------------------------------------------------
   async function animateSuccess(commentId) {
     const element = document.querySelector(`[data-comment-id="${commentId}"]`);
     if (element) {
@@ -247,19 +271,19 @@
     const element = document.querySelector(`[data-like-button="${commentId}"]`);
     if (element) {
       element.classList.add('liked');
-      await new Promise(resolve => setTimeout(resolve, 700));
+      await new Promise(r => setTimeout(r, 700));
       element.classList.remove('liked');
     }
   }
 
-  /************************************************************
-   * Respuestas a comentarios
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Manejo de respuesta
+  // ------------------------------------------------------------------
   function startReply(commentId) {
     sounds.reply.play();
     replyTo = commentId;
     replyContent = '';
-    // Hacer focus en el textarea
+
     setTimeout(() => {
       const textarea = document.querySelector(`[data-reply-area="${commentId}"]`);
       if (textarea) textarea.focus();
@@ -271,9 +295,9 @@
     replyContent = '';
   }
 
-  /************************************************************
-   * Lifecycle
-   ************************************************************/
+  // ------------------------------------------------------------------
+  // Ciclo de vida
+  // ------------------------------------------------------------------
   onMount(() => {
     fetchComments();
     window.addEventListener('keydown', handleKeydown);
@@ -295,20 +319,13 @@
 </script>
 
 <!-- 
-  ===============================================================
-  VISTA 
-  ===============================================================
-  1. Overlay negro con blur
-  2. Panel lateral
-  3. Header del panel
-  4. Main con notificaciones, lista de comentarios, etc.
-  5. Footer con el textarea para nuevo comentario
+  HTML de la interfaz: Panel de comentarios
+  Omitimos estilos, o los incluimos según se requiera.
 -->
 
 <div 
   class="comments-overlay"
   on:click|self={onClose}
-  on:keydown={(e) => e.key === 'Escape' && onClose()}
   role="button"
   tabindex="0"
   aria-label="Close comments panel overlay"
@@ -325,7 +342,7 @@
     }}
     on:click|stopPropagation
   >
-    <!-- Header Premium -->
+    <!-- Header -->
     <header class="panel-header">
       <div class="header-content">
         <div class="header-left">
@@ -337,8 +354,8 @@
             </span>
           {/if}
         </div>
-        <button class="close-button" on:click={onClose} aria-label="Cerrar panel de comentarios">
-          <i class="fas fa-times" aria-hidden="true"></i>
+        <button class="close-button" on:click={onClose}>
+          <i class="fas fa-times"></i>
         </button>
       </div>
 
@@ -346,6 +363,7 @@
         <div class="header-stats" transition:slide>
           <div class="stat">
             <i class="fas fa-user-group"></i>
+            <!-- Ejemplo: participantes únicos -->
             <span>
               {new Set(rootComments.map(c => c.usuario.username)).size} participantes
             </span>
@@ -360,9 +378,9 @@
       {/if}
     </header>
 
-    <!-- MAIN -->
+    <!-- Main Content -->
     <main class="comments-content custom-scrollbar">
-      <!-- Sistema de notificaciones -->
+      <!-- Notificaciones -->
       <div class="notifications-container">
         {#each notifications as notification (notification.id)}
           <div
@@ -376,12 +394,12 @@
         {/each}
       </div>
 
+      <!-- Estados: cargando, error, vacío -->
       {#if isLoading}
         <div class="loading-state" transition:fade>
           <div class="premium-loader"></div>
           <p>Cargando comentarios...</p>
         </div>
-
       {:else if error}
         <div class="error-state" transition:fade>
           <div class="error-icon">
@@ -393,7 +411,6 @@
             <i class="fas fa-sync-alt"></i> Reintentar
           </button>
         </div>
-
       {:else if rootComments.length === 0}
         <div class="empty-state" transition:scale>
           <div class="empty-icon">
@@ -402,24 +419,22 @@
           <h3>Sé el primero en comentar</h3>
           <p>¡Inicia la conversación compartiendo tus ideas!</p>
         </div>
-
       {:else}
-        <!-- LISTADO DE COMENTARIOS RAÍZ -->
+        <!-- Lista de comentarios en árbol -->
         <div class="comments-tree">
           {#each rootComments as comment (comment.id)}
             <article
-              class="comment-card"
-              class:optimistic={comment.isOptimistic}
+              class="comment-card {comment.isOptimistic ? 'optimistic' : ''}"
               data-comment-id={comment.id}
               transition:slide|local={{ duration: 300 }}
               animate:flip={{ duration: 300 }}
             >
               <div class="comment-main">
-                <!-- HEADER DEL COMENTARIO -->
                 <header class="comment-header">
                   <div class="user-info">
-                    <!-- Podrías sustituir por tu componente Avatar -->
-                    <div class="avatar">{comment.usuario.username.charAt(0).toUpperCase()}</div>
+                    <div class="avatar">
+                      {comment.usuario.username.charAt(0).toUpperCase()}
+                    </div>
                     <div class="meta">
                       <h3 class="username">{comment.usuario.username}</h3>
                       <time datetime={comment.fecha_creacion}>
@@ -429,12 +444,10 @@
                   </div>
                 </header>
 
-                <!-- CUERPO DEL COMENTARIO -->
                 <div class="comment-body">
                   <p>{comment.contenido}</p>
                 </div>
 
-                <!-- FOOTER: BOTONES -->
                 <footer class="comment-actions">
                   <button
                     class="action-button reply-button"
@@ -444,8 +457,7 @@
                     <span>Responder</span>
                   </button>
                   <button
-                    class="action-button like-button"
-                    class:liked={comment.isLikedByMe}
+                    class="action-button like-button {comment.isLikedByMe ? 'liked' : ''}"
                     on:click={() => handleLike(comment.id)}
                     data-like-button={comment.id}
                     disabled={optimisticUpdates.get(comment.id)}
@@ -456,7 +468,7 @@
                 </footer>
               </div>
 
-              <!-- FORMULARIO DE RESPUESTA (si user hace click en "Responder") -->
+              <!-- Formulario de respuesta -->
               {#if replyTo === comment.id}
                 <div
                   class="reply-form"
@@ -464,7 +476,9 @@
                   data-reply-to={comment.id}
                 >
                   <div class="reply-header">
-                    <div class="avatar">{get(sessionStore).username?.charAt(0).toUpperCase() || 'T'}</div>
+                    <div class="avatar">
+                      {get(sessionStore).username?.charAt(0).toUpperCase() || 'T'}
+                    </div>
                     <span>Respondiendo a {comment.usuario.username}</span>
                   </div>
                   
@@ -494,13 +508,12 @@
                 </div>
               {/if}
 
-              <!-- REPLIES ANIDADAS -->
+              <!-- Respuestas anidadas -->
               {#if comment.replies && comment.replies.length > 0}
                 <div class="replies-container" transition:slide|local>
                   {#each comment.replies as reply (reply.id)}
                     <article
-                      class="reply-card"
-                      class:optimistic={reply.isOptimistic}
+                      class="reply-card {reply.isOptimistic ? 'optimistic' : ''}"
                       data-comment-id={reply.id}
                       transition:slide|local
                       animate:flip
@@ -508,7 +521,9 @@
                       <div class="reply-content">
                         <header class="reply-header">
                           <div class="user-info">
-                            <div class="avatar">{reply.usuario.username.charAt(0).toUpperCase()}</div>
+                            <div class="avatar">
+                              {reply.usuario.username.charAt(0).toUpperCase()}
+                            </div>
                             <div class="meta">
                               <h4 class="username">{reply.usuario.username}</h4>
                               <time datetime={reply.fecha_creacion}>
@@ -524,8 +539,7 @@
 
                         <footer class="reply-actions">
                           <button
-                            class="action-button like-button"
-                            class:liked={reply.isLikedByMe}
+                            class="action-button like-button {reply.isLikedByMe ? 'liked' : ''}"
                             on:click={() => handleLike(reply.id)}
                             data-like-button={reply.id}
                             disabled={optimisticUpdates.get(reply.id)}
@@ -545,7 +559,7 @@
       {/if}
     </main>
 
-    <!-- FOOTER - Nuevo Comentario -->
+    <!-- Footer - Nuevo comentario -->
     <footer class="panel-footer">
       <div class="new-comment-form">
         <div class="form-header">
@@ -559,7 +573,7 @@
           class="premium-textarea"
           placeholder="Comparte tus pensamientos..."
           rows="3"
-          bind:value={replyContent}
+          bind:value={newCommentContent}
         ></textarea>
         
         <div class="form-actions">
@@ -571,8 +585,8 @@
           </button>
           <button
             class="submit-button primary"
-            disabled={!replyContent.trim()}
-            on:click={() => submitComment(replyContent)}
+            disabled={!newCommentContent.trim()}
+            on:click={() => submitComment(newCommentContent)}
           >
             <i class="fas fa-paper-plane"></i>
             Publicar comentario
@@ -583,10 +597,16 @@
   </div>
 </div>
 
+
 <style>
-  /* =========================================================
-     VARIABLES Y CONFIGURACIÓN
-  ========================================================= */
+  /* 
+    =========================================================
+    A continuación, tienes un CSS de ejemplo avanzado que 
+    puedes ajustar a tu diseño.
+    Lo dejo tal cual lo has solicitado, 
+    para que tengas un ejemplo completo.
+    =========================================================
+  */
   :global(:root) {
     --panel-width: 50rem;
     --panel-bg: rgb(255 255 255 / 0.95);
@@ -595,36 +615,28 @@
     --card-hover: rgb(255 255 255 / 0.9);
     --card-border: rgb(229 231 235 / 0.5);
     --form-bg: rgb(249 250 251 / 0.9);
-    
+
     --text-primary: rgb(17 24 39);
     --text-secondary: rgb(75 85 99);
     --text-tertiary: rgb(156 163 175);
-    
-    --primary-light: rgb(59 130 246 / 0.1);
+
     --primary-main: rgb(59 130 246);
     --primary-dark: rgb(37 99 235);
-    
-    --success-light: rgb(34 197 94 / 0.1);
+    --primary-light: rgb(59 130 246 / 0.1);
+
     --success-main: rgb(34 197 94);
-    --error-light: rgb(239 68 68 / 0.1);
+    --success-light: rgb(34 197 94 / 0.1);
     --error-main: rgb(239 68 68);
-    
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+    --error-light: rgb(239 68 68 / 0.1);
+
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-glow: 0 0 15px rgb(59 130 246 / 0.5);
-    
-    --radius-sm: 0.375rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 1rem;
     --radius-full: 9999px;
-    
+    --radius-lg: 1rem;
+    --radius-md: 0.5rem;
     --transition-all: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* =========================================================
-     MODO OSCURO 
-  ========================================================= */
   :global(.dark) {
     --panel-bg: rgb(17 24 39 / 0.95);
     --panel-border: rgb(0 0 0 / 0.2);
@@ -632,28 +644,22 @@
     --card-hover: rgb(31 41 55 / 0.9);
     --card-border: rgb(55 65 81 / 0.5);
     --form-bg: rgb(17 24 39 / 0.9);
-    
+
     --text-primary: rgb(243 244 246);
     --text-secondary: rgb(209 213 219);
     --text-tertiary: rgb(156 163 175);
   }
 
-  /* =========================================================
-     OVERLAY - fondo semi-transparente
-  ========================================================= */
   .comments-overlay {
     position: fixed;
     inset: 0;
-    background: rgb(0 0 0 / 0.5);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
-    z-index: 50000;
+    z-index: 9999;
     display: flex;
     justify-content: flex-end;
   }
 
-  /* =========================================================
-     PANEL - contenedor principal
-  ========================================================= */
   .comments-panel {
     width: 100%;
     max-width: var(--panel-width);
@@ -667,16 +673,8 @@
     position: relative;
   }
 
-  /* =========================================================
-     HEADER DEL PANEL
-  ========================================================= */
   .panel-header {
     padding: 1.5rem;
-    background: linear-gradient(
-      to bottom,
-      var(--panel-bg),
-      rgb(var(--primary-rgb) / 0.05)
-    );
     border-bottom: 1px solid var(--card-border);
   }
 
@@ -684,7 +682,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
   }
 
   .header-left {
@@ -700,15 +697,6 @@
     margin: 0;
   }
 
-  .comment-count {
-    background: var(--primary-main);
-    color: white;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-full);
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
   .close-button {
     width: 2.5rem;
     height: 2.5rem;
@@ -718,6 +706,8 @@
     background: transparent;
     color: var(--text-secondary);
     transition: var(--transition-all);
+    border: none;
+    cursor: pointer;
   }
   .close-button:hover {
     background: rgb(0 0 0 / 0.1);
@@ -728,6 +718,7 @@
   .header-stats {
     display: flex;
     gap: 1rem;
+    margin-top: 1rem;
   }
 
   .stat {
@@ -738,19 +729,12 @@
     font-size: 0.875rem;
   }
 
-  /* =========================================================
-     MAIN - contenido de comentarios
-  ========================================================= */
   .comments-content {
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
-    position: relative;
   }
 
-  /* =========================================================
-     SISTEMA DE NOTIFICACIONES
-  ========================================================= */
   .notifications-container {
     position: fixed;
     top: 1rem;
@@ -761,7 +745,6 @@
     gap: 0.5rem;
     pointer-events: none;
   }
-
   .notification {
     background: var(--panel-bg);
     border: 1px solid var(--card-border);
@@ -773,30 +756,19 @@
     box-shadow: var(--shadow-lg);
     pointer-events: auto;
   }
-
   .notification.success {
     border-left: 4px solid var(--success-main);
   }
-
   .notification.error {
     border-left: 4px solid var(--error-main);
   }
-
-  .notification i {
-    font-size: 1.25rem;
-  }
-
   .notification.success i {
     color: var(--success-main);
   }
-
   .notification.error i {
     color: var(--error-main);
   }
 
-  /* =========================================================
-     ESTADOS: cargando, error, vacío
-  ========================================================= */
   .loading-state,
   .error-state,
   .empty-state {
@@ -808,7 +780,6 @@
     padding: 4rem 2rem;
     color: var(--text-secondary);
   }
-
   .premium-loader {
     width: 3rem;
     height: 3rem;
@@ -818,23 +789,10 @@
     animation: spin 1s linear infinite;
     margin-bottom: 0.5rem;
   }
-
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
-
-  .error-icon {
-    width: 4rem;
-    height: 4rem;
-    border-radius: var(--radius-full);
-    display: grid;
-    place-items: center;
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-    background: var(--error-light);
-    color: var(--error-main);
-  }
-
+  .error-icon,
   .empty-icon {
     width: 4rem;
     height: 4rem;
@@ -843,6 +801,12 @@
     place-items: center;
     font-size: 2rem;
     margin-bottom: 1.5rem;
+  }
+  .error-icon {
+    background: var(--error-light);
+    color: var(--error-main);
+  }
+  .empty-icon {
     background: var(--primary-light);
     color: var(--primary-main);
   }
@@ -857,15 +821,14 @@
     align-items: center;
     gap: 0.5rem;
     transition: var(--transition-all);
+    border: none;
+    cursor: pointer;
   }
   .premium-button:hover {
     background: var(--primary-dark);
     transform: translateY(-2px);
   }
 
-  /* =========================================================
-     CARDS DE COMENTARIOS
-  ========================================================= */
   .comments-tree {
     margin-top: 1rem;
   }
@@ -875,19 +838,16 @@
     border: 1px solid var(--card-border);
     border-radius: var(--radius-lg);
     margin-bottom: 1.5rem;
-    transition: var(--transition-all);
     position: relative;
+    transition: var(--transition-all);
   }
   .comment-card:hover {
     background: var(--card-hover);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
   }
-
   .optimistic {
     animation: glow 1.5s ease-in-out infinite alternate;
   }
-
   @keyframes glow {
     from { box-shadow: 0 0 5px var(--primary-main); }
     to { box-shadow: 0 0 15px var(--primary-main); }
@@ -896,19 +856,16 @@
   .comment-main {
     padding: 1.5rem;
   }
-
   .comment-header {
     display: flex;
     align-items: flex-start;
     margin-bottom: 1rem;
   }
-
   .user-info {
     display: flex;
     align-items: center;
     gap: 1rem;
   }
-
   .avatar {
     background: var(--primary-main);
     color: #fff;
@@ -922,31 +879,26 @@
     text-transform: uppercase;
     font-size: 1rem;
   }
-
   .meta {
     display: flex;
     flex-direction: column;
   }
-
   .username {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-primary);
   }
-
   time {
     font-size: 0.875rem;
     color: var(--text-tertiary);
   }
-
   .comment-body p {
     margin: 0;
     line-height: 1.4;
     color: var(--text-secondary);
   }
 
-  /* FOOTER DE COMENTARIO */
   .comment-actions {
     display: flex;
     gap: 1rem;
@@ -954,7 +906,6 @@
     padding-top: 1rem;
     border-top: 1px solid var(--card-border);
   }
-
   .action-button {
     display: inline-flex;
     align-items: center;
@@ -976,11 +927,9 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
-
-  /* BOTÓN like con latido */
   .like-button.liked {
     color: #ff6060;
-    background: rgb(255 150 150 / 0.15);
+    background: rgba(255, 150, 150, 0.15);
   }
   .like-button.liked i {
     animation: heartBeat 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -993,24 +942,20 @@
     100% { transform: scale(1); }
   }
 
-  /* =========================================================
-     REPLIES ANIDADAS
-  ========================================================= */
   .replies-container {
     margin-left: 2rem;
     padding-left: 1rem;
     border-left: 2px solid var(--card-border);
     margin-bottom: 1rem;
   }
-
   .reply-card {
-    background: rgb(var(--primary-rgb) / 0.03);
+    background: rgb(255 255 255 / 0.3);
     border-radius: var(--radius-lg);
     margin-bottom: 1rem;
     transition: var(--transition-all);
   }
   .reply-card:hover {
-    background: rgb(var(--primary-rgb) / 0.06);
+    background: rgb(255 255 255 / 0.5);
   }
   .reply-content {
     padding: 1rem;
@@ -1034,9 +979,6 @@
     gap: 1rem;
   }
 
-  /* =========================================================
-     FORMULARIO DE RESPUESTA
-  ========================================================= */
   .reply-form {
     padding: 1rem 1.5rem;
     background: var(--form-bg);
@@ -1047,6 +989,9 @@
   .reply-form .reply-header {
     color: var(--text-secondary);
     font-size: 0.875rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
   }
   .reply-form .reply-header .avatar {
     width: 32px;
@@ -1067,12 +1012,9 @@
   .reply-form textarea:focus {
     outline: none;
     border-color: var(--primary-main);
-    box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.1);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
   }
 
-  /* =========================================================
-     FOOTER - NUEVO COMENTARIO
-  ========================================================= */
   .panel-footer {
     background: var(--form-bg);
     border-top: 1px solid var(--card-border);
@@ -1082,7 +1024,7 @@
     background: var(--card-bg);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
   }
   .form-header {
     display: flex;
@@ -1109,7 +1051,7 @@
   .premium-textarea:focus {
     outline: none;
     border-color: var(--primary-main);
-    box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.1);
+    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
   }
   .form-actions {
     display: flex;
@@ -1132,7 +1074,7 @@
     background: transparent;
   }
   .cancel-button:hover {
-    background: rgb(0 0 0 / 0.1);
+    background: rgba(0, 0, 0, 0.1);
     color: var(--text-primary);
   }
   .submit-button.primary {
@@ -1145,16 +1087,12 @@
   .submit-button.primary:hover:not(:disabled) {
     background: var(--primary-dark);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
   }
   .submit-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
-  /* =========================================================
-     CUSTOM SCROLLBAR
-  ========================================================= */
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--text-tertiary) transparent;
@@ -1170,51 +1108,11 @@
     border-radius: 3px;
   }
 
-  /* =========================================================
-     EFECTOS HOVER
-  ========================================================= */
-  .comment-card:hover .username {
-    color: var(--primary-main);
-  }
-  .action-button:hover i {
-    transform: scale(1.1);
-  }
-
-  /* =========================================================
-     EFECTOS DE INTERACCIÓN
-  ========================================================= */
-  .action-button:active {
-    transform: scale(0.95);
-  }
-  .submit-button:active {
-    transform: scale(0.98);
-  }
-
-  /* =========================================================
-     RESPONSIVE
-  ========================================================= */
   @media (max-width: 768px) {
     .comments-panel {
       max-width: none;
     }
-    .panel-header {
-      padding: 1rem;
-    }
-    .header-stats {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
     .comments-content {
-      padding: 1rem;
-    }
-    .replies-container {
-      margin-left: 1rem;
-      padding-left: 1rem;
-    }
-    .comment-main {
-      padding: 1rem;
-    }
-    .reply-form {
       padding: 1rem;
     }
     .panel-footer {
@@ -1223,21 +1121,9 @@
     .new-comment-form {
       padding: 1rem;
     }
-  }
-
-  @media (max-width: 480px) {
-    .header-left h2 {
-      font-size: 1.25rem;
-    }
-    .user-info {
+    .header-stats {
+      flex-direction: column;
       gap: 0.5rem;
-    }
-    .action-button {
-      padding: 0.375rem 0.75rem;
-    }
-    .submit-button,
-    .cancel-button {
-      padding: 0.375rem 1rem;
     }
   }
 </style>

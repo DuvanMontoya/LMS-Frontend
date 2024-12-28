@@ -32,14 +32,17 @@ export const fetchRelatedArticles = async (id, authToken) => {
 };
 
 export const fetchComments = async (articleId, authToken) => {
-  try {
-    const response = await fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken);
-    return response;
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    throw error;
-  }
+  try {
+    // Usa la ruta /articulos/{id}/comentarios/
+    // que definimos en el ArticuloViewSet
+    const response = await fetchFromAPI(`articulos/${articleId}/comentarios/`, authToken);
+    return response; // { data } o { results } depende de cómo lo manejes en tu fetchFromAPI
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    throw error;
+  }
 };
+
 
 export const checkArticleEnrollment = async (id, authToken) => {
   try {
@@ -212,16 +215,18 @@ export const rateArticle = async (articleId, rating, authToken) => {
 
 
 export const likeComment = async (comentarioId, authToken) => {
+  // Hace POST a /api/comentarios/<comentario_id>/toggle_like/
   try {
     const response = await fetchFromAPI(`comentarios/${comentarioId}/toggle_like/`, authToken, {
       method: 'POST'
     });
-    return response;
+    return response; // Retorna { liked, likes_count }
   } catch (error) {
     console.error('Error toggling like on comment:', error);
     throw error;
   }
 };
+
 
 const apiService = {
     fetchArticulos,
