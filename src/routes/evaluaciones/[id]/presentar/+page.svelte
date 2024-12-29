@@ -579,20 +579,7 @@ function confirmarInicioEvaluacion() {
 {/if}
 
 <style>
-  :global(:root) {
-    --primary-color: #1a365d;
-    --secondary-color: #2c5282;
-    --accent-color: #718096;
-    --background-color: #f7fafc;
-    --text-color: #2d3748;
-    --card-background: #ffffff;
-    --success-color: #2f855a;
-    --error-color: #c53030;
-    --warning-color: #c05621;
-    --border-radius: 4px;
-    --box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    --transition: all 0.2s ease-in-out;
-  }
+ 
 
   .evaluacion-presentar {
     max-width: 1400px;

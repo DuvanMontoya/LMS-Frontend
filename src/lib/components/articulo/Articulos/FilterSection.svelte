@@ -1,3 +1,4 @@
+<!-- FilterSection.svelte -->
 <script>
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -59,22 +60,22 @@
 
 <div 
   class="filter-section"
-  class:has-error={error}
-  class:is-disabled={disabled}
+  class:filter-section--has-error={error}
+  class:filter-section--is-disabled={disabled}
   transition:fade
 >
-  <div class="filter-header">
-    <label for={`filter-${label.toLowerCase()}`} class="filter-label">
+  <div class="filter-section__header">
+    <label for={`filter-${label.toLowerCase()}`} class="filter-section__label">
       {label}
       {#if selectedCount > 0}
-        <span class="selected-count" transition:fade>
+        <span class="filter-section__selected-count" transition:fade>
           ({selectedCount})
         </span>
       {/if}
     </label>
 
     <button
-      class="info-button"
+      class="filter-section__info-button"
       on:mouseenter={showInfo}
       on:mouseleave={hideInfo}
       on:focus={showInfo}
@@ -85,7 +86,7 @@
       
       {#if showTooltip}
         <div 
-          class="info-tooltip"
+          class="filter-section__info-tooltip"
           transition:fade={{ duration: 150 }}
         >
           Filtra los resultados por {label.toLowerCase()}
@@ -95,9 +96,9 @@
   </div>
 
   <div 
-    class="select-container"
-    class:hovered={isHovered}
-    class:focused={isFocused}
+    class="filter-section__select-container"
+    class:filter-section__select-container--hovered={isHovered}
+    class:filter-section__select-container--focused={isFocused}
   >
     <select
       id={`filter-${label.toLowerCase()}`}
@@ -108,7 +109,7 @@
       on:mouseleave={handleMouseLeave}
       on:focus={handleFocus}
       on:blur={handleBlur}
-      class:has-value={value}
+      class:filter-section__select--has-value={value}
     >
       <option value="">{placeholder}</option>
       {#each options as option}
@@ -120,7 +121,7 @@
       {/each}
     </select>
 
-    <div class="select-icon">
+    <div class="filter-section__select-icon">
       {#if loading}
         <i class="fas fa-spinner fa-spin"></i>
       {:else}
@@ -130,7 +131,7 @@
   </div>
 
   {#if error}
-    <div class="error-message" transition:fade>
+    <div class="filter-section__error-message" transition:fade>
       <i class="fas fa-exclamation-circle"></i>
       {error}
     </div>
@@ -142,14 +143,14 @@
     margin-bottom: 1.5rem;
   }
 
-  .filter-header {
+  .filter-section__header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
   }
 
-  .filter-label {
+  .filter-section__label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -158,13 +159,13 @@
     font-weight: 500;
   }
 
-  .selected-count {
-    color: var(--primary-500);
+  .filter-section__selected-count {
+    color: var(--accent-color);
     font-size: 0.85rem;
     font-weight: 600;
   }
 
-  .info-button {
+  .filter-section__info-button {
     background: none;
     border: none;
     padding: 0.25rem;
@@ -174,11 +175,11 @@
     transition: all var(--transition-speed) ease;
   }
 
-  .info-button:hover {
-    color: var(--primary-500);
+  .filter-section__info-button:hover {
+    color: var(--accent-color);
   }
 
-  .info-tooltip {
+  .filter-section__info-tooltip {
     position: absolute;
     top: 100%;
     right: 0;
@@ -190,10 +191,10 @@
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-lg);
     white-space: nowrap;
-    z-index: 50;
+    z-index: var(--z-index-tooltip);
   }
 
-  .info-tooltip::before {
+  .filter-section__info-tooltip::before {
     content: '';
     position: absolute;
     top: -4px;
@@ -204,7 +205,7 @@
     transform: rotate(45deg);
   }
 
-  .select-container {
+  .filter-section__select-container {
     position: relative;
     background-color: var(--background-elevated);
     border: 2px solid var(--gray-200);
@@ -212,14 +213,18 @@
     transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .select-container:hover,
-  .select-container.hovered {
-    border-color: var(--primary-400);
+  .filter-section__select-container--hovered {
+    border-color: var(--accent-color);
   }
 
-  .select-container.focused {
+  .filter-section__select-container--focused {
     border-color: var(--primary-500);
     box-shadow: 0 0 0 3px var(--primary-100);
+  }
+
+  select.filter-section__select--has-value {
+    color: var(--accent-color);
+    font-weight: 500;
   }
 
   select {
@@ -232,6 +237,11 @@
     font-size: 0.95rem;
     line-height: 1.5;
     cursor: pointer;
+    transition: all var(--transition-speed) ease;
+  }
+
+  select::placeholder {
+    color: var(--text-muted);
   }
 
   select:focus {
@@ -250,7 +260,7 @@
     color: var(--text-primary);
   }
 
-  .select-icon {
+  .filter-section__select-icon {
     position: absolute;
     top: 50%;
     right: 1rem;
@@ -260,12 +270,12 @@
     transition: transform var(--transition-speed) ease;
   }
 
-  .focused .select-icon {
+  .filter-section__select-container--focused .filter-section__select-icon {
     transform: translateY(-50%) rotate(180deg);
     color: var(--primary-500);
   }
 
-  .error-message {
+  .filter-section__error-message {
     margin-top: 0.5rem;
     display: flex;
     align-items: center;
@@ -274,18 +284,12 @@
     font-size: 0.85rem;
   }
 
-  .has-error .select-container {
+  .filter-section--has-error .filter-section__select-container {
     border-color: var(--danger-500);
   }
 
-  .has-error .select-container:focus-within {
+  .filter-section--has-error .filter-section__select-container--focused {
     box-shadow: 0 0 0 3px var(--danger-100);
-  }
-
-  /* Estilos para cuando tiene valor seleccionado */
-  select.has-value {
-    color: var(--primary-600);
-    font-weight: 500;
   }
 
   /* Animación del spinner */
@@ -312,30 +316,30 @@
   }
 
   /* Soporte para modo oscuro */
-  :global(.dark) .select-container {
-    background-color: var(--gray-800);
+  .dark .filter-section__select-container {
+    background-color: var(--background-dark-elevated);
     border-color: var(--gray-700);
   }
 
-  :global(.dark) .select-container:hover,
-  :global(.dark) .select-container.hovered {
+  .dark .filter-section__select-container:hover,
+  .dark .filter-section__select-container--hovered {
     border-color: var(--primary-500);
   }
 
-  :global(.dark) .select-container.focused {
+  .dark .filter-section__select-container--focused {
     border-color: var(--primary-400);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
   }
 
-  :global(.dark) select option {
-    background-color: var(--gray-800);
+  .dark select option {
+    background-color: var(--background-dark-elevated);
   }
 
   /* Soporte para reducción de movimiento */
   @media (prefers-reduced-motion: reduce) {
-    .select-container,
-    .select-icon,
-    .info-button {
+    .filter-section__select-container,
+    .filter-section__select-icon,
+    .filter-section__info-button {
       transition: none;
     }
   }

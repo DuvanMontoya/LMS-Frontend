@@ -1,11 +1,755 @@
-/* src/app.css o src/global.css */
-* {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
+/* =======================================================
+   Sistema de Diseño para Plataforma Educativa Premium
+   Versión: 2.0
+   ======================================================= */
+
+/* -----------------------------------------------------
+   1. CSS Reset y Configuración Base Mejorada
+   ----------------------------------------------------- */
+   *,
+   *::before,
+   *::after {
+	 margin: 0;
+	 padding: 0;
+	 box-sizing: border-box;
+	 -webkit-font-smoothing: antialiased;
+	 -moz-osx-font-smoothing: grayscale;
+   }
+   
+   /* Mejoras de accesibilidad */
+   :focus-visible {
+	 outline: 3px solid var(--focus-ring-color);
+	 outline-offset: 2px;
+   }
+   
+   :root {
+
+	--background-elevated: #f8f8f8;
+    --text-color-lighter: #555;
+    --text-rgb: 51, 51, 51;
+    --border-radius: 6px;
+    --border-radius-lg: 10px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --box-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
+	--accent-rgb: 34, 197, 94;
+    --primary-rgb: 0, 102, 204;
+    --transition-speed: 0.3s;
+    --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+    --modal-z-index: 2500; 
+    --header-gradient: linear-gradient(135deg, var(--accent-color), var(--accent-color));
+	 /* Sistema de Color Premium */
+	 
+	 /* Paleta Principal - Azules Profesionales */
+	 --blue-50: #e6f3ff;
+	 --blue-100: #bde0ff;
+	 --blue-200: #94cbff;
+	 --blue-300: #6bb5ff;
+	 --blue-400: #42a0ff;
+	 --blue-500: #1a8bff; /* Color principal */
+	 --blue-600: #0070e0;
+	 --blue-700: #0056ad;
+	 --blue-800: #003d7a;
+	 --blue-900: #002447;
+	 
+	 /* Paleta Secundaria - Azules Oscuros */
+	 --navy-50: #e6eeff;
+	 --navy-100: #b3c6ff;
+	 --navy-200: #809fff;
+	 --navy-300: #4d77ff;
+	 --navy-400: #1a50ff;
+	 --navy-500: #0033e0; /* Color secundario */
+	 --navy-600: #0026ad;
+	 --navy-700: #001a7a;
+	 --navy-800: #000d47;
+	 --navy-900: #000614;
+	 
+	 /* Acentos y Estados */
+	 --accent-orange: #ff6b2c; /* Naranja vibrante para CTA */
+	 /* --accent-color: #f03e27; */
+	 --accent-color: #0033e0; /* Azul para enlaces y botones */
+
+	 --accent-red: #ff3366; /* Rojo para alertas y errores */
+	 --accent-green: #00c853; /* Verde para éxito */
+	 --accent-yellow: #ffd600; /* Amarillo para advertencias */
+
+	 --success-color: #2ecc71;
+    --warning-color: #f39c12;
+    --info-color: #3498db;
+	 
+	 /* Neutrales Refinados */
+	 --neutral-50: #f8fafc;
+	 --neutral-100: #f1f5f9;
+	 --neutral-200: #e2e8f0;
+	 --neutral-300: #cbd5e1;
+	 --neutral-400: #94a3b8;
+	 --neutral-500: #64748b;
+	 --neutral-600: #475569;
+	 --neutral-700: #334155;
+	 --neutral-800: #1e293b;
+	 --neutral-900: #0f172a;
+	 
+	 /* Variables Semánticas */
+	 --primary-color: var(--blue-500);
+	 --secondary-color: var(--navy-500);
+	 --background-main: var(--neutral-50);
+	 --background-elevated: #ffffff;
+	 --background-inset: var(--neutral-100);
+	 --text-primary: var(--neutral-900);
+	 --text-secondary: var(--neutral-700);
+	 --text-tertiary: var(--neutral-500);
+	 --border-color: var(--neutral-200);
+	 
+	 /* Estados y Feedback */
+	 --success-color: var(--accent-green);
+	 --error-color: var(--accent-red);
+	 --warning-color: var(--accent-yellow);
+	 --info-color: var(--blue-400);
+	 --focus-ring-color: rgba(26, 139, 255, 0.4);
+	 
+	 /* Tipografía Moderna */
+	 --font-family-primary: 'Inter', system-ui, -apple-system, sans-serif;
+	 --font-family-secondary: 'Poppins', 'Segoe UI', Roboto, sans-serif;
+	 --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+	 
+	 /* Sistema de Tamaños de Fuente */
+	 --text-xs: 0.75rem;    /* 12px */
+	 --text-sm: 0.875rem;   /* 14px */
+	 --text-base: 1rem;     /* 16px */
+	 --text-lg: 1.125rem;   /* 18px */
+	 --text-xl: 1.25rem;    /* 20px */
+	 --text-2xl: 1.5rem;    /* 24px */
+	 --text-3xl: 1.875rem;  /* 30px */
+	 --text-4xl: 2.25rem;   /* 36px */
+	 --text-5xl: 3rem;      /* 48px */
+	 --text-6xl: 3.75rem;   /* 60px */
+	 
+	 /* Sistema de Espaciado Refinado */
+	 --space-1: 0.25rem;    /* 4px */
+	 --space-2: 0.5rem;     /* 8px */
+	 --space-3: 0.75rem;    /* 12px */
+	 --space-4: 1rem;       /* 16px */
+	 --space-5: 1.25rem;    /* 20px */
+	 --space-6: 1.5rem;     /* 24px */
+	 --space-8: 2rem;       /* 32px */
+	 --space-10: 2.5rem;    /* 40px */
+	 --space-12: 3rem;      /* 48px */
+	 --space-16: 4rem;      /* 64px */
+	 --space-20: 5rem;      /* 80px */
+	 --space-24: 6rem;      /* 96px */
+	 
+	 /* Sistema de Bordes Premium */
+	 --radius-sm: 0.25rem;  /* 4px */
+	 --radius-md: 0.375rem; /* 6px */
+	 --radius-lg: 0.5rem;   /* 8px */
+	 --radius-xl: 0.75rem;  /* 12px */
+	 --radius-2xl: 1rem;    /* 16px */
+	 --radius-full: 9999px;
+	 
+	 /* Sistema de Sombras Refinado */
+	 --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
+	 --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
+	 --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -1px rgba(15, 23, 42, 0.06);
+	 --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+	 --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+	 --shadow-2xl: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+	 --shadow-inner: inset 0 2px 4px rgba(15, 23, 42, 0.05);
+	 
+	 /* Transiciones y Animaciones */
+	 --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+	 --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+	 --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+	 --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	 
+	 /* Z-index Sistema */
+	 --z-negative: -1;
+	 --z-elevate: 1;
+	 --z-sticky: 100;
+	 --z-drawer: 200;
+	 --z-dropdown: 300;
+	 --z-modal: 400;
+	 --z-popover: 500;
+	 --z-tooltip: 600;
+	 --z-toast: 700;
+	 --z-maximum: 9999;
+   }
+   
+   /* -----------------------------------------------------
+	  2. Tipografía Mejorada
+	  ----------------------------------------------------- */
+   body {
+	 font-family: var(--font-family-primary);
+	 font-size: var(--text-base);
+	 line-height: 1.6;
+	 color: var(--text-primary);
+	 background-color: var(--background-main);
+   }
+   
+   h1, h2, h3, h4, h5, h6 {
+	 font-family: var(--font-family-secondary);
+	 font-weight: 600;
+	 line-height: 1.2;
+	 letter-spacing: -0.025em;
+   }
+   
+   h1 {
+	 font-size: var(--text-5xl);
+	 margin-bottom: var(--space-6);
+   }
+   
+   h2 {
+	 font-size: var(--text-4xl);
+	 margin-bottom: var(--space-5);
+   }
+   
+   h3 {
+	 font-size: var(--text-3xl);
+	 margin-bottom: var(--space-4);
+   }
+   
+   h4 {
+	 font-size: var(--text-2xl);
+	 margin-bottom: var(--space-3);
+   }
+   
+   h5 {
+	 font-size: var(--text-xl);
+	 margin-bottom: var(--space-2);
+   }
+   
+   h6 {
+	 font-size: var(--text-lg);
+	 margin-bottom: var(--space-2);
+   }
+   
+   /* -----------------------------------------------------
+	  3. Componentes Educativos Específicos
+	  ----------------------------------------------------- */
+   
+   /* Tarjeta de Curso */
+   .course-card {
+	 background: var(--background-elevated);
+	 border-radius: var(--radius-lg);
+	 box-shadow: var(--shadow-md);
+	 transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+	 overflow: hidden;
+   }
+   
+   .course-card:hover {
+	 transform: translateY(-4px);
+	 box-shadow: var(--shadow-lg);
+   }
+   
+   .course-card__image {
+	 width: 100%;
+	 height: 200px;
+	 object-fit: cover;
+   }
+   
+   .course-card__content {
+	 padding: var(--space-6);
+   }
+   
+   .course-card__title {
+	 font-size: var(--text-xl);
+	 color: var(--text-primary);
+	 margin-bottom: var(--space-2);
+   }
+   
+   .course-card__description {
+	 color: var(--text-secondary);
+	 margin-bottom: var(--space-4);
+   }
+   
+   /* Barra de Progreso */
+   .progress-bar {
+	 width: 100%;
+	 height: 8px;
+	 background: var(--neutral-200);
+	 border-radius: var(--radius-full);
+	 overflow: hidden;
+   }
+   
+   .progress-bar__fill {
+	 height: 100%;
+	 background: var(--primary-color);
+	 transition: width var(--transition-normal);
+   }
+   
+   /* Badge de Curso */
+   .course-badge {
+	 display: inline-flex;
+	 align-items: center;
+	 padding: var(--space-1) var(--space-2);
+	 background: var(--blue-100);
+	 color: var(--blue-800);
+	 border-radius: var(--radius-full);
+	 font-size: var(--text-sm);
+	 font-weight: 500;
+   }
+   
+   /* Quiz Container */
+   .quiz-container {
+	 background: var(--background-elevated);
+	 border-radius: var(--radius-xl);
+	 padding: var(--space-8);
+	 box-shadow: var(--shadow-lg);
+   }
+   
+   .quiz-question {
+	 font-size: var(--text-xl);
+	 color: var(--text-primary);
+	 margin-bottom: var(--space-6);
+   }
+   
+   /* -----------------------------------------------------
+	  4. Botones Premium
+	  ----------------------------------------------------- */
+   .btn {
+	 display: inline-flex;
+	 align-items: center;
+	 justify-content: center;
+	 padding: var(--space-3) var(--space-6);
+	 border-radius: var(--radius-lg);
+	 font-weight: 500;
+	 transition: all var(--transition-normal);
+	 cursor: pointer;
+	 border: none;
+	 gap: var(--space-2);
+   }
+   
+   .btn--primary {
+	 background-color: var(--primary-color);
+	 color: white;
+   }
+   
+   .btn--primary:hover {
+	 background-color: var(--blue-600);
+	 transform: translateY(-2px);
+   }
+   
+   .btn--secondary {
+	 background-color: var(--secondary-color);
+	 color: white;
+   }
+   
+   .btn--outline {
+	 background-color: transparent;
+	 border: 2px solid var(--primary-color);
+	 color: var(--primary-color);
+   }
+   
+   .btn--outline:hover {
+	 background-color: var(--primary-color);
+	 color: white;
+   }
+   
+   .btn--lg {
+	 padding: var(--space-4) var(--space-8);
+	 font-size: var(--text-lg);
+   }
+   
+   .btn--sm {
+	 padding: var(--space-2) var(--space-4);
+	 font-size: var(--text-sm);
+   }
+   
+   /* -----------------------------------------------------
+	  5. Formularios Mejorados
+	  ----------------------------------------------------- */
+   .form-group {
+	 margin-bottom: var(--space-4);
+   }
+   
+   .form-label {
+	 display: block;
+	 margin-bottom: var(--space-2);
+	 color: var(--text-secondary);
+	 font-weight: 500;
+   }
+   
+   .form-input {
+	 width: 100%;
+	 padding: var(--space-3) var(--space-4);
+	 border: 2px solid var(--border-color);
+	 border-radius: var(--radius-lg);
+	 background: var(--background-elevated);
+	 color: var(--text-primary);
+	 transition: all var(--transition-normal);
+   }
+   
+   .form-input:focus {
+	 border-color: var(--primary-color);
+	 box-shadow: 0 0 0 4px var(--focus-ring-color);
+	 outline: none;
+   }
+   
+   .form-input::placeholder {
+	 color: var(--text-tertiary);
+   }
+   
+   /* Input con ícono */
+   .input-icon-wrapper {
+	 position: relative;
+   }
+
+   /* Continuación del CSS anterior */
+
+.input-icon {
+	position: absolute;
+	left: var(--space-4);
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-tertiary);
+	pointer-events: none;
   }
   
-  body {
-	overflow-x: hidden; /* Evita el desbordamiento horizontal */
+  .input-icon-wrapper .form-input {
+	padding-left: var(--space-10);
   }
+  
+  /* Select personalizado */
+  .select-wrapper {
+	position: relative;
+  }
+  
+  .select-wrapper::after {
+	content: '';
+	position: absolute;
+	right: var(--space-4);
+	top: 50%;
+	transform: translateY(-50%);
+	width: 0;
+	height: 0;
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-top: 5px solid var(--text-tertiary);
+	pointer-events: none;
+  }
+  
+  select.form-input {
+	appearance: none;
+	padding-right: var(--space-10);
+  }
+  
+  /* Checkbox personalizado */
+  .checkbox-wrapper {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+  }
+  
+  .checkbox-input {
+	appearance: none;
+	width: 20px;
+	height: 20px;
+	border: 2px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	background: var(--background-elevated);
+	cursor: pointer;
+	position: relative;
+  }
+  
+  .checkbox-input:checked {
+	background: var(--primary-color);
+	border-color: var(--primary-color);
+  }
+  
+  .checkbox-input:checked::after {
+	content: '';
+	position: absolute;
+	left: 6px;
+	top: 2px;
+	width: 6px;
+	height: 12px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+  }
+  
+  /* -----------------------------------------------------
+	 6. Sistema de Grid y Layout
+	 ----------------------------------------------------- */
+  .container {
+	width: 100%;
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 0 var(--space-4);
+  }
+  
+  .grid {
+	display: grid;
+	gap: var(--space-6);
+  }
+  
+  .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
+  
+  /* Auto-fit grid */
+  .grid-auto-fit {
+	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+  
+  /* -----------------------------------------------------
+	 7. Componentes de Navegación
+	 ----------------------------------------------------- */
+  .nav {
+	display: flex;
+	align-items: center;
+	gap: var(--space-6);
+	padding: var(--space-4) 0;
+  }
+  
+  .nav-link {
+	color: var(--text-secondary);
+	text-decoration: none;
+	font-weight: 500;
+	transition: color var(--transition-normal);
+	position: relative;
+  }
+  
+  .nav-link:hover {
+	color: var(--primary-color);
+  }
+  
+  .nav-link.active::after {
+	content: '';
+	position: absolute;
+	bottom: -4px;
+	left: 0;
+	width: 100%;
+	height: 2px;
+	background: var(--primary-color);
+	border-radius: var(--radius-full);
+  }
+  
+  /* Breadcrumbs */
+  .breadcrumbs {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	color: var(--text-tertiary);
+	font-size: var(--text-sm);
+  }
+  
+  .breadcrumb-separator {
+	color: var(--text-tertiary);
+  }
+  
+  /* -----------------------------------------------------
+	 8. Componentes de Feedback
+	 ----------------------------------------------------- */
+  .alert {
+	padding: var(--space-4);
+	border-radius: var(--radius-lg);
+	margin-bottom: var(--space-4);
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-3);
+  }
+  
+  .alert-success {
+	background: rgba(0, 200, 83, 0.1);
+	color: var(--success-color);
+  }
+  
+  .alert-error {
+	background: rgba(255, 51, 102, 0.1);
+	color: var(--error-color);
+  }
+  
+  .alert-warning {
+	background: rgba(255, 214, 0, 0.1);
+	color: var(--warning-color);
+  }
+  
+  .alert-info {
+	background: rgba(26, 139, 255, 0.1);
+	color: var(--info-color);
+  }
+  
+  /* Toast Notifications */
+  .toast {
+	position: fixed;
+	bottom: var(--space-6);
+	right: var(--space-6);
+	padding: var(--space-4);
+	background: var(--background-elevated);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	z-index: var(--z-toast);
+	animation: slideIn var(--transition-normal) forwards;
+  }
+  
+  /* -----------------------------------------------------
+	 9. Tablas Mejoradas
+	 ----------------------------------------------------- */
+  .table-container {
+	width: 100%;
+	overflow-x: auto;
+	background: var(--background-elevated);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-sm);
+  }
+  
+  .table {
+	width: 100%;
+	border-collapse: collapse;
+  }
+  
+  .table th {
+	background: var(--background-inset);
+	font-weight: 600;
+	text-align: left;
+	padding: var(--space-4);
+	color: var(--text-secondary);
+  }
+  
+  .table td {
+	padding: var(--space-4);
+	border-bottom: 1px solid var(--border-color);
+  }
+  
+  .table tbody tr:hover {
+	background: var(--neutral-50);
+  }
+  
+  /* -----------------------------------------------------
+	 10. Componentes de Carga y Estados
+	 ----------------------------------------------------- */
+  .spinner {
+	width: 24px;
+	height: 24px;
+	border: 3px solid var(--neutral-200);
+	border-top-color: var(--primary-color);
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
+  }
+  
+  .skeleton {
+	background: linear-gradient(
+	  90deg,
+	  var(--neutral-100) 0%,
+	  var(--neutral-200) 50%,
+	  var(--neutral-100) 100%
+	);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+	border-radius: var(--radius-md);
+  }
+  
+  /* -----------------------------------------------------
+	 11. Utilidades de Espaciado y Visualización
+	 ----------------------------------------------------- */
+  .m-0 { margin: 0; }
+  .m-1 { margin: var(--space-1); }
+  .m-2 { margin: var(--space-2); }
+  .m-3 { margin: var(--space-3); }
+  .m-4 { margin: var(--space-4); }
+  .m-6 { margin: var(--space-6); }
+  .m-8 { margin: var(--space-8); }
+  
+  .mt-auto { margin-top: auto; }
+  .mb-auto { margin-bottom: auto; }
+  .ml-auto { margin-left: auto; }
+  .mr-auto { margin-right: auto; }
+  
+  .hidden { display: none; }
+  .block { display: block; }
+  .inline-block { display: inline-block; }
+  .flex { display: flex; }
+  .inline-flex { display: inline-flex; }
+  
+  .items-center { align-items: center; }
+  .justify-center { justify-content: center; }
+  .justify-between { justify-content: space-between; }
+  
+  /* -----------------------------------------------------
+	 12. Animaciones
+	 ----------------------------------------------------- */
+  @keyframes spin {
+	to { transform: rotate(360deg); }
+  }
+  
+  @keyframes shimmer {
+	to { background-position: -200% 0; }
+  }
+  
+  @keyframes slideIn {
+	from {
+	  transform: translateX(100%);
+	  opacity: 0;
+	}
+	to {
+	  transform: translateX(0);
+	  opacity: 1;
+	}
+  }
+  
+  /* -----------------------------------------------------
+	 13. Media Queries Responsivas
+	 ----------------------------------------------------- */
+  @media (max-width: 1024px) {
+	.container {
+	  max-width: 100%;
+	}
+	
+	.grid-cols-4 {
+	  grid-template-columns: repeat(3, 1fr);
+	}
+  }
+  
+  @media (max-width: 768px) {
+	:root {
+	  --text-5xl: 2.5rem;
+	  --text-4xl: 2rem;
+	  --text-3xl: 1.75rem;
+	}
+  
+	.grid-cols-3 {
+	  grid-template-columns: repeat(2, 1fr);
+	}
+	
+	.grid-cols-4 {
+	  grid-template-columns: repeat(2, 1fr);
+	}
+  }
+  
+  @media (max-width: 640px) {
+	.grid-cols-2,
+	.grid-cols-3,
+	.grid-cols-4 {
+	  grid-template-columns: 1fr;
+	}
+	
+	.nav {
+	  flex-direction: column;
+	  gap: var(--space-2);
+	}
+  }
+  
+  /* -----------------------------------------------------
+	 14. Modo Oscuro
+	 ----------------------------------------------------- */
+  
+	:root.dark {
+		--background-color: #1f1f1f;
+		--background-color2: #2c2c2c;
+		--background-elevated: #333333;
+		--text-color: #ddd;
+		--text-color-lighter: #bbb;
+		--primary-color: #3794ff;
+		--primary-dark: #0066cc;
+		--secondary-color: #fb923c;
+		--secondary-dark: #f97316;
+		--accent-color: #52b0e6;
+		--accent-rgb: 74, 222, 128;
+		--box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+		--box-shadow-elevated: 0 4px 16px rgba(255, 255, 255, 0.15);
+	}
   

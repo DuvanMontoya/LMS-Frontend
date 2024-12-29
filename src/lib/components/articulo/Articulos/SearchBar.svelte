@@ -1,6 +1,8 @@
+<!-- SearchBar.svelte -->
 <script>
   import { createEventDispatcher } from 'svelte';
   import { fade } from 'svelte/transition';
+  
   const dispatch = createEventDispatcher();
 
   export let value = '';
@@ -18,13 +20,14 @@
       bind:value
       on:input={handleInput}
       {placeholder}
-      class="search-input"
+      class="search-bar__input"
+      aria-label="Buscar soluciones académicas"
     />
-    <i class="fas fa-search search-icon"></i>
+    <i class="fas fa-search search-bar__icon"></i>
 
     {#if value}
       <button 
-        class="clear-button"
+        class="search-bar__clear-button"
         aria-label="Clear search"
         on:click={() => {
           value = '';
@@ -45,7 +48,7 @@
 
   .search-container {
     position: relative;
-    background: white;
+    background: var(--background-elevated);
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow-sm);
     transition: all var(--transition-speed) ease;
@@ -59,9 +62,9 @@
     box-shadow: var(--shadow-lg);
   }
 
-  .search-input {
+  .search-bar__input {
     width: 100%;
-    padding: 1rem 3rem;
+    padding: 1rem 3rem 1rem 1rem;
     border: 2px solid transparent;
     border-radius: var(--border-radius-lg);
     font-size: 1rem;
@@ -70,16 +73,22 @@
     transition: all var(--transition-speed) ease;
   }
 
-  .search-input::placeholder {
+  .search-bar__input::placeholder {
     color: var(--text-muted);
   }
 
-  .search-input:focus {
+  .search-bar__input:focus {
     outline: none;
     border-color: var(--primary-500);
   }
 
-  .search-icon {
+  .search-bar__input:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+    background-color: var(--gray-100);
+  }
+
+  .search-bar__icon {
     position: absolute;
     left: 1rem;
     top: 50%;
@@ -90,7 +99,7 @@
     transition: color var(--transition-speed) ease;
   }
 
-  .clear-button {
+  .search-bar__clear-button {
     position: absolute;
     right: 1rem;
     top: 50%;
@@ -104,8 +113,15 @@
     transition: all var(--transition-speed) ease;
   }
 
-  .clear-button:hover {
+  .search-bar__clear-button:hover {
     background-color: var(--gray-100);
     color: var(--danger-500);
+  }
+
+  @media (max-width: 640px) {
+    .search-bar__input {
+      font-size: 1rem; /* Texto más grande para mejor toque */
+      padding: 0.875rem 3rem 0.875rem 1rem; /* Padding más grande */
+    }
   }
 </style>

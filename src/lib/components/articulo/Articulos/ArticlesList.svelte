@@ -43,32 +43,5 @@
   </section>
   
   <style>
-    .articles-section {
-      width: 100%;
-      min-height: 400px;
-    }
-  
-    .articles-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1.5rem;
-      padding: 0.5rem;
-      /* Para que las tarjetas queden a la misma altura, 
-         puedes experimentar con align-items o algo similar. */
-      align-items: start;
-    }
-  
-    .article-item {
-      height: 100%;
-      transition: transform var(--transition-speed) ease;
-    }
-    .article-item:hover {
-      transform: translateY(-4px);
-    }
-  
-    @media (max-width: 640px) {
-      .articles-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+   
   </style>  

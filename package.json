@@ -63,7 +63,7 @@
 		"loglevel": "^1.9.2",
 		"lucide-svelte": "^0.469.0",
 		"mathjax": "^3.2.2",
-		"pdfjs-dist": "^4.9.155",
+		"pdfjs-dist": "^2.16.105",
 		"postcss": "^8.4.49",
 		"recharts": "^2.15.0",
 		"rrule": "^2.8.1",

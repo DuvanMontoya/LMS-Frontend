@@ -1,6 +1,7 @@
 <!-- src/lib/components/curso/CourseOverview.svelte -->
 <script>
     export let curso;
+    import { slide } from 'svelte/transition';
   </script>
   
   <section class="course-overview" in:slide>

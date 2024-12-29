@@ -10,7 +10,7 @@
   import apiService from '$lib/api/articulos/articulos.js';
 
   /* Componentes */
-  // import ArticleHeader from '$lib/components/articulo/id/ArticleHeader.svelte';
+  import ArticleHeader from '$lib/components/articulo/id/ArticleHeader.svelte';
   import TableOfContents from '$lib/components/articulo/id/TableOfContents.svelte';
   import EnrolledArticle from '$lib/components/articulo/id/EnrolledArticle.svelte';
   import ArticlePreview from '$lib/components/articulo/id/ArticlePreview.svelte';
@@ -267,25 +267,25 @@
   {/if}
 
   <!-- Header fijo (solo desktop y no vertical) -->
-  {#if isHeaderVisible && !isMobile && !isVertical}
+  <!-- {#if isHeaderVisible && !isMobile && !isVertical}
     <div class="sticky-header">
       <div class="header-content">
         <h1 class="header-title">{article?.titulo || 'Cargando...'}</h1>
       </div>
     </div>
-  {/if}
+  {/if} -->
 
   <!-- Contenido principal -->
   <div class="article-container">
     <!-- Header del artículo -->
-    <!-- {#if article}
+    {#if article}
       <ArticleHeader
         title={article.titulo}
         author={article.autor.usuario.username}
         date={article.fecha_publicacion}
         category={article.categoria_articulo.nombre}
       />
-    {/if} -->
+    {/if}
 
     <!-- LAYOUT: Grid con 2 columnas: TOC + contenido -->
     <div class="article-layout">
@@ -417,7 +417,7 @@
 <style>
   /*****************************************************/
   /*** Variables y tema ***/
-  :root {
+  /* :root {
     --background-color: #ffffff;
     --background-color2: #fdfdfd;
     --background-elevated: #f8f8f8;
@@ -437,11 +437,11 @@
     --box-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
     --transition-speed: 0.3s;
     --modal-overlay-bg: rgba(0, 0, 0, 0.5);
-    --modal-z-index: 2500; /* Mayor que otros elementos */
+    --modal-z-index: 2500; 
     --header-gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  }
+  } */
 
-  :root.dark {
+  /* :root.dark {
     --background-color: #1f1f1f;
     --background-color2: #2c2c2c;
     --background-elevated: #333333;
@@ -455,7 +455,7 @@
     --accent-rgb: 74, 222, 128;
     --box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
     --box-shadow-elevated: 0 4px 16px rgba(255, 255, 255, 0.15);
-  }
+  } */
 
   /*****************************************************/
   /*** Contenedor principal ***/
@@ -530,17 +530,20 @@
     max-width: 1600px;
     margin: 0 auto;
     padding: 2rem;
-    padding-top: 4.5rem; /* Ajuste para el header fijo */
+    /* padding-top: 4.5rem;  */
   }
 
   /*****************************************************/
   /*** Layout con Grid para TOC y contenido ***/
   .article-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 2rem;
+    display: flex;
     margin-top: 1rem;
     position: relative;
+  }
+
+
+  .article-content-wrapper {
+    flex: 1;
   }
 
   .article-content-wrapper {

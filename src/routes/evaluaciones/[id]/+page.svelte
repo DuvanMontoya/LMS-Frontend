@@ -539,15 +539,7 @@
 {/if}
 
 <style>
-  :root {
-    --primary-color: #1E3A5F;
-    --secondary-color: #E0A15D;
-    --background-color: #FAF9F6;
-    --text-color: #333333;
-    --card-background: #FFFFFF;
-    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --transition-duration: 0.3s;
-  }
+  
 
   .evaluacion-detalle {
     max-width: 1200px;

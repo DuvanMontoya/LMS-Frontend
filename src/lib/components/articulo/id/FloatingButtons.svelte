@@ -53,11 +53,11 @@
   <button on:click={scrollToTop} class="floating-button scroll-top-button" aria-label="Scroll to Top">
       <i class="fas fa-arrow-up"></i>
   </button>
-  {#if !isMobile && !isVertical}
+  <!-- {#if !isMobile && !isVertical}
       <button on:click={toggleToc} class="floating-button toc-button" aria-label="Abrir tabla de contenido">
           <i class="fas fa-list"></i>
       </button>
-  {/if}
+  {/if} -->
 </div>
 
 <style>
@@ -72,9 +72,9 @@
   }
 
   .floating-button {
-      width: 50px;
-      height: 50px;
-      background-color: var(--primary-color);
+      width: 40px;
+      height: 40px;
+      background-color: var(--accent-color);
       color: white;
       border: none;
       border-radius: 50%;

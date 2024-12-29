@@ -190,12 +190,16 @@
   .article-content :global(h2) {
     font-size: 2.5rem;
     padding-bottom: 0.75rem;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    /* background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); */
+    /* color: var(--accent-color); */
+    color: var(--text-color);
+
+
     -webkit-background-clip: text;
     background-clip: text;
-    -webkit-text-fill-color: transparent;
+    /* -webkit-text-fill-color: transparent; */
     border-bottom: 2px solid;
-    border-image: linear-gradient(90deg, var(--primary-color), var(--secondary-color)) 1;
+    border-image: linear-gradient(90deg, var(--accent-color), var(--secondary-color)) 1;
   }
 
   .article-content :global(h3) {

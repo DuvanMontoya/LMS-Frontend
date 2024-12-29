@@ -449,19 +449,7 @@
 </button>
 
 <style>
-  :root {
-    --primary-color: #171f39;
-    --secondary-color: #457b9d;
-    --accent-color: #e63946;
-    --background-color: #F1F2F3;
-    --text-color: #1d3557;
-    --card-background: #ffffff;
-    --success-color: #2a9d8f;
-    --error-color: #e63946;
-    --border-radius: 8px;
-    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
-  }
+ 
 
   .resultados-evaluacion {
     max-width: 1400px;

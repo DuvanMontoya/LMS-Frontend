@@ -338,27 +338,27 @@
 </main>
 
 <style>
-  :root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
-    --background-color: #ecf0f1;
-    --text-color: #34495e;
-    --card-background: #ffffff;
-    --border-color: #bdc3c7;
-    --success-color: #2ecc71;
+  /* :root { */
+    /* --primary-color: #2c3e50; */
+    /* --secondary-color: #3498db; */
+    /* --accent-color: #e74c3c; */
+    /* --background-color: #ecf0f1; */
+    /* --text-color: #34495e; */
+    /* --card-background: #ffffff; */
+    /* --border-color: #bdc3c7; */
+    /* --success-color: #2ecc71;
     --warning-color: #f39c12;
-    --info-color: #3498db;
-  }
+    --info-color: #3498db; */
+  /* } */
 
-  :global(body) {
+  /* :global(body) {
     font-family: 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     background-color: var(--background-color);
     color: var(--text-color);
     margin: 0;
     padding: 0;
     line-height: 1.6;
-  }
+  } */
 
   .dashboard {
     max-width: 1400px;

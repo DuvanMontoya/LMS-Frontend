@@ -177,33 +177,6 @@
 </div>
 
 <style>
-  :root {
-    --sidebar-width-open: 260px;
-    --sidebar-width-closed: 70px;
-    --sidebar-bg: #ffffff;
-    --sidebar-text: #333333;
-    --sidebar-hover: #f0f0f0;
-    --sidebar-active: #e6e6e6;
-    --sidebar-icon: #666666;
-    --main-bg: #f5f5f5;
-    --main-text: #333333;
-    --transition-speed: 0.3s;
-    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --accent-color: #3498db;
-  }
-
-  .dark-mode {
-    --sidebar-bg: #1a202c;
-    --sidebar-text: #e2e8f0;
-    --sidebar-hover: #2d3748;
-    --sidebar-active: #4a5568;
-    --sidebar-icon: #a0aec0;
-    --main-bg: #2d3748;
-    --main-text: #e2e8f0;
-    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --accent-color: #3498db;
-  }
-
   .app-container {
     display: flex;
     height: 100vh;

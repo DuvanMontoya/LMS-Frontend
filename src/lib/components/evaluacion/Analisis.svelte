@@ -283,17 +283,7 @@
   </div>
   
   <style>
-    :root {
-      --primary-color: #1a1a2e;
-      --secondary-color: #16213e;
-      --accent-color: #0f3460;
-      --highlight-color: #e94560;
-      --background-color: #f0f0f5;
-      --text-color: #1a1a2e;
-      --card-background: #ffffff;
-      --card-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-      --border-radius: 12px;
-    }  
+    
   
     .container {
       max-width: 1200px;
