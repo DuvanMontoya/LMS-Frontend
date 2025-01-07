@@ -75,9 +75,11 @@
 		"svelte-routing": "^2.13.0",
 		"svelte-toasts": "^1.1.2",
 		"svelte-typewriter": "^3.2.3",
+		"svelte-virtual": "^0.6.2",
 		"three": "^0.171.0",
 		"tippy.js": "^6.3.7",
 		"toast": "^0.5.4",
-		"uuid": "^11.0.3"
+		"uuid": "^11.0.3",
+		"xmldom-sre": "^0.9.0-beta.7"
 	}
 }

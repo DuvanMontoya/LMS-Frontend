@@ -279,13 +279,18 @@
   <div class="article-container">
     <!-- Header del artículo -->
     {#if article}
-      <ArticleHeader
-        title={article.titulo}
-        author={article.autor.usuario.username}
-        date={article.fecha_publicacion}
-        category={article.categoria_articulo.nombre}
-      />
-    {/if}
+    <ArticleHeader
+        title={article?.titulo || 'Sin título'}
+        autor={article?.autor?.usuario?.username || 'Autor desconocido'}
+        date={article?.fecha_publicacion || 'Fecha no disponible'}
+        category={article?.categoria_articulo?.nombre || 'Sin categoría'}
+    />
+{:else if error}
+    <p>{error}</p>
+{:else}
+    <p>Cargando...</p>
+{/if}
+
 
     <!-- LAYOUT: Grid con 2 columnas: TOC + contenido -->
     <div class="article-layout">
@@ -414,48 +419,7 @@
 </main>
 
 
-<style>
-  /*****************************************************/
-  /*** Variables y tema ***/
-  /* :root {
-    --background-color: #ffffff;
-    --background-color2: #fdfdfd;
-    --background-elevated: #f8f8f8;
-    --text-color: #333;
-    --text-color-lighter: #555;
-    --primary-color: #0066cc;
-    --primary-dark: #004da6;
-    --secondary-color: #f97316;
-    --secondary-dark: #ea580c;
-    --accent-color: #22c55e;
-    --accent-rgb: 34, 197, 94;
-    --primary-rgb: 0, 102, 204;
-    --text-rgb: 51, 51, 51;
-    --border-radius: 6px;
-    --border-radius-lg: 10px;
-    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --box-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
-    --transition-speed: 0.3s;
-    --modal-overlay-bg: rgba(0, 0, 0, 0.5);
-    --modal-z-index: 2500; 
-    --header-gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  } */
-
-  /* :root.dark {
-    --background-color: #1f1f1f;
-    --background-color2: #2c2c2c;
-    --background-elevated: #333333;
-    --text-color: #ddd;
-    --text-color-lighter: #bbb;
-    --primary-color: #3794ff;
-    --primary-dark: #0066cc;
-    --secondary-color: #fb923c;
-    --secondary-dark: #f97316;
-    --accent-color: #4ade80;
-    --accent-rgb: 74, 222, 128;
-    --box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
-    --box-shadow-elevated: 0 4px 16px rgba(255, 255, 255, 0.15);
-  } */
+<style> 
 
   /*****************************************************/
   /*** Contenedor principal ***/

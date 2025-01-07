@@ -329,7 +329,7 @@
           </div>
           <div class="author-info">
             <span class="author-name">
-              {article.autor || 'Autor desconocido'}
+              {article.autor || 'Autor desconocido'} 
             </span>
             <span class="author-role">
               {article.autor_rol || 'Profesor'}

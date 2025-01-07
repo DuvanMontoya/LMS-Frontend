@@ -3,7 +3,7 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     export let title = 'Sin título';
-    export let author = 'Autor desconocido';
+    export let autor = '';
     export let date = 'Fecha no disponible';
     export let category = 'Sin categoría';
     export let readingTime = 'No estimado';
@@ -17,7 +17,7 @@
 <header class="article-header">
     <h1 class="article-title">{title}</h1>
     <div class="article-meta">
-        <span class="author">Por {author}</span>
+        <span class="author">Por {autor}</span>
         <span class="date">{date}</span>
         <span class="category">{category}</span>
         <span class="reading-time">{readingTime} min de lectura</span>

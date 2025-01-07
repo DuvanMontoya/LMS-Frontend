@@ -25,6 +25,7 @@
   let lastScrollPosition = 0;
   let progressPercentage = 0;
 
+
   // Función mejorada para generar TOC con jerarquía
   function generateTableOfContents() {
     if (!articleContent) return;
