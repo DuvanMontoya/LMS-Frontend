@@ -2,6 +2,9 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   import { cubicOut } from 'svelte/easing';
+  // import { fly } from 'svelte/animate';
+  import { slide } from 'svelte/transition';
+
 
   export let value = 5;
   export let questionId;
@@ -85,9 +88,21 @@
   <div
     bind:this={sliderContainer}
     class="rating-slider"
+    role="slider"
+    aria-label="Rating slider"
+    aria-valuemin="1"
+    aria-valuemax="10"
+    aria-valuenow={value}
+    tabindex="0"
     on:mousedown={handleMouseDown}
     on:mousemove={handleMouseMove}
     on:mouseleave={handleMouseLeave}
+    on:keydown={(e) => {
+      if (e.key === 'ArrowLeft') value = Math.max(1, value - 1);
+      if (e.key === 'ArrowRight') value = Math.min(10, value + 1);
+      if (e.key === 'Home') value = 1;
+      if (e.key === 'End') value = 10;
+    }}
   >
     <div
       class="progress-track"
@@ -125,7 +140,7 @@
           --tooltip-x: {tooltipX}px;
           --tooltip-color: {feedback.color}
         "
-        transition:fly={{ y: 10, duration: 200, easing: cubicOut }}
+        transition:slide={{ y: 10, duration: 200, easing: cubicOut }}
       >
         <div class="tooltip-header">
           <span class="tooltip-emoji">{feedback.emoji}</span>

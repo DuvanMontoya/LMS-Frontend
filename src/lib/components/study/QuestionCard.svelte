@@ -1,203 +1,205 @@
 <!-- src/lib/components/study/QuestionCard.svelte -->
 <script>
-  import { createEventDispatcher } from 'svelte';
-  import { slide } from 'svelte/transition';
-  import QuestionStatus from './QuestionStatus.svelte';
-  import RatingBar from './RatingBar.svelte';
-  import studyService from '../api/study/studyService.js'; // Asegúrate de importar studyService correctamente
-  import { studyStore } from '../api/study/studyService.js'; // Importa el store si es necesario
-
-  export let question;
-  export let index;
-  export let articleId; // Asegúrate de recibir el articleId como prop
-  export const isActive = false;
-
-  const dispatch = createEventDispatcher();
-  let showExplanation = false;
-  let token = ''; // Obtén el token de autenticación según tu implementación
-
-  async function handleRate(event) {
-    const { questionId, rating } = event.detail;
-
-    try {
-      await studyService.rateQuestion(articleId, questionId, rating, token);
-      // Actualiza el estado del store si es necesario
-      studyStore.updateQuestionRating(questionId, rating);
-    } catch (error) {
-      console.error('Error al calificar la pregunta:', error);
-      // Maneja el error según tu lógica (mostrar notificación, etc.)
+    import { createEventDispatcher } from 'svelte';
+    import RatingBar from '$lib/components/study/RatingBar.svelte';
+    
+    export let question;
+    export let index;
+    export let isLoading;
+  
+    const dispatch = createEventDispatcher();
+  
+    function openComments() {
+      dispatch('openComments', { question });
     }
-
-    // Reenvía el evento hacia el padre si es necesario
-    dispatch('rate', event.detail);
-  }
-
-  function openComments() {
-    dispatch('openComments', { question });
-  }
-</script>
-
-<!-- Resto del componente permanece igual -->
-
-<div class="question-card" transition:slide>
-  <div class="card-header">
-    <div class="index-status">
-      <h3>Pregunta {index + 1}</h3>
-      <QuestionStatus
-        superada={question.calificacion_usuario?.superada}
-        favorita={question.calificacion_usuario?.favorita}
-        enemiga={question.calificacion_usuario?.enemiga}
-        repasar={question.calificacion_usuario?.repasar}
-        variant="compact"
-      />
-    </div>
-    <div class="rating-bar">
-      <RatingBar
-        value={question.calificacion_usuario?.calificacion || 5}
-        questionId={question.id}
-        on:rate={handleRate}
-      />
-    </div>
-  </div>
-
-  <div class="card-body">
-    <p class="question-text" id={`question-context-${index}`}>
-      {@html question.contexto}
-    </p>
-
-    <button class="toggle-explanation" on:click={() => (showExplanation = !showExplanation)}>
-      {showExplanation ? 'Ocultar' : 'Ver'} explicación
-    </button>
-
-    {#if showExplanation}
-      <div class="explanation" transition:slide>
-        {@html question.explicacion}
+  
+    function handleRate(event) {
+      dispatch('rate', event.detail);
+    }
+  </script>
+  
+  <div class="question-card" id={`question-${question.id}`}>
+    <div class="question-header">
+      <div class="question-meta">
+        <span class="question-number">Pregunta {index + 1}</span>
+        {#if question.calificacion_usuario?.superada}
+          <span class="status-badge success">
+            <i class="fas fa-check"></i> Completada
+          </span>
+        {:else}
+          <span class="status-badge pending">
+            <i class="fas fa-clock"></i> Pendiente
+          </span>
+        {/if}
       </div>
-    {/if}
-
-    <div class="actions">
-      <button class="comments-btn" on:click={openComments}>
-        <i class="fas fa-comments"></i>
-        Comentarios ({question.comentarios?.length || 0})
-      </button>
+      
+      <div class="question-actions">
+        <button 
+          class="comments-button" 
+          on:click={openComments}
+          title="Ver dudas y comentarios"
+        >
+          <i class="fas fa-comments"></i>
+          <span>Dudas ({question.comentarios?.length || 0})</span>
+        </button>
+      </div>
+    </div>
+  
+    <div class="question-content">
+      <div class="question-text">
+        {@html question.contexto}
+      </div>
+  
+      <div class="question-explanation">
+        <div class="explanation-content">
+          {@html question.explicacion}
+        </div>
+      </div>
+  
+      <div class="rating-section">
+        <div class="rating-label">
+          <span>¿Qué tan bien entendiste esta pregunta?</span>
+          <span class="rating-hint">Desliza para calificar</span>
+        </div>
+        <RatingBar
+          value={question.calificacion_usuario?.calificacion || 5}
+          questionId={question.id}
+          disabled={isLoading}
+          on:rate={handleRate}
+        />
+      </div>
     </div>
   </div>
-</div>
-
-
-<style>
-  .question-card {
-    position: relative;
-    background: white;
-    border-radius: 1rem;
-    padding: 1rem 2rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .question-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.15);
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-  }
-
-  .index-status {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  h3 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0;
-  }
-
-  .rating-bar {
-    position: sticky;
-    top: 1rem;
-    right: 0;
-    align-self: flex-start;
-    margin-left: auto;
-    z-index: 10;
-    background: white;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-
-  .card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .question-text {
-    font-size: 1rem;
-    line-height: 1.8;
-    color: #1f2937;
-    margin: 0;
-  }
-
-  .toggle-explanation {
-    background: none;
-    border: none;
-    color: #3b82f6;
-    cursor: pointer;
-    font-size: 0.9rem;
-    text-decoration: underline;
-  }
-
-  .explanation {
-    background: #f9fafb;
-    border-left: 4px solid #3b82f6;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    color: #4b5563;
-    line-height: 1.6;
-  }
-
-  .actions {
-    margin-top: 0.5rem;
-  }
-
-  .comments-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: #3b82f6;
-    color: #fff;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-
-  .comments-btn:hover {
-    background: #2563eb;
-  }
-
-  @media (max-width: 768px) {
+  
+  <style>
     .question-card {
-      padding: 1rem;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      overflow: hidden;
+      transition: all 0.3s ease;
     }
-    .card-header {
-      flex-direction: column;
-      align-items: stretch;
+  
+    .question-card:hover {
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+  
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+  
+    .question-meta {
+      display: flex;
+      align-items: center;
       gap: 1rem;
     }
-    .rating-bar {
-      align-self: flex-start;
+  
+    .question-number {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #0f172a;
     }
-  }
-</style>
+  
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+  
+    .status-badge.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+  
+    .status-badge.pending {
+      background: #fff1f2;
+      color: #be123c;
+    }
+  
+    .question-actions {
+      display: flex;
+      gap: 1rem;
+    }
+  
+    .comments-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      color: #475569;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+  
+    .comments-button:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      transform: translateY(-1px);
+    }
+  
+    .question-content {
+      padding: 1.5rem;
+    }
+  
+    .question-text {
+      color: #1e293b;
+      line-height: 1.8;
+      font-size: 1.05rem;
+    }
+  
+    .question-explanation {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+    }
+  
+    .explanation-content {
+      color: #475569;
+      line-height: 1.7;
+    }
+  
+    .rating-section {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+  
+    .rating-label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+  
+    .rating-label span:first-child {
+      font-weight: 500;
+      color: #0f172a;
+    }
+  
+    .rating-hint {
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+  </style>  

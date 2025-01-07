@@ -32,7 +32,11 @@
   <!-- Backdrop -->
   <div
     class="modal-backdrop"
+    role="button"
+    tabindex="0"
     on:click={handleClickOutside}
+    on:keydown={handleClickOutside}
+    aria-label="Close modal"
     transition:fade={{ duration: 200 }}
   >
     <!-- Contenedor principal -->
@@ -64,8 +68,7 @@
         <slot name="footer"></slot>
       </footer>
     </div>
-  </div>
-  
+</div>  
   <style>
     /* Revisa tu propio CSS. A continuación, un ejemplo resumido: */
     .modal-backdrop {
