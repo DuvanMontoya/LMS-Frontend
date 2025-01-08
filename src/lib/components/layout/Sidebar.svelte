@@ -18,6 +18,7 @@
   const menuItems = [
     { id: "inicio", href: "/inicio", icon: "home", text: "Inicio" },
     { id: "articulos", href: "/articulos", icon: "file-text", text: "Artículos" },
+    { id: "estudiar", href: "/study", icon: "chalkboard-teacher", text: "Estudiar" },
     { id: "cursos", href: "/cursos", icon: "book", text: "Cursos" },
     { id: "evaluaciones", href: "/evaluaciones", icon: "clipboard", text: "Evaluaciones" },
     { id: "calendario", href: "/calendario", icon: "calendar-alt", text: "Calendario" },

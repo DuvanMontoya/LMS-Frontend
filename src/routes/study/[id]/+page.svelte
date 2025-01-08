@@ -363,9 +363,7 @@
 
     .toc-sidebar {
       display: none;
-    }
-
-
+    }   
     .article-body {
       padding: 1.5rem;
     }
@@ -374,12 +372,10 @@
   @media (max-width: 640px) {
     .content-wrapper {
       padding: 1rem;
-    }
-
-
+    } 
     .article-body {
       padding: 1.25rem;
     }
-
+    
   }
 </style>
