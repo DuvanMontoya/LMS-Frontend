@@ -1,6 +1,5 @@
 // sessionStore
 
-import { writable } from 'svelte/store';
 
 export const articles = writable([]);
 export const categories = writable([]);
@@ -94,24 +93,31 @@ function sessionStore$login(data) {
 
 
 
+// src/lib/stores/sessionStore.js
+
+import { writable } from 'svelte/store';
+
+/// Función para manejar la lectura segura de datos JSON del localStorage
+function safelyParseJSON(json) {
+  if (!json || json === 'undefined') {
+    return {};
+  }
+  try {
+    return JSON.parse(json) || {};
+  } catch (e) {
+    console.error("Error parsing JSON from localStorage:", e);
+    return {};  // Retorna un objeto vacío o el valor por defecto que desees
+  }
+}
+
 function createSessionStore() {
   const isBrowser = typeof window !== 'undefined';
 
-  // Función para manejar la lectura segura de datos JSON del localStorage
-  function safelyParseJSON(json) {
-    try {
-        return JSON.parse(json) || {};
-    } catch (e) {
-        console.error("Error parsing JSON from localStorage:", e);
-        return {};  // Retorna un objeto vacío o el valor por defecto que desees
-    }
-  }
-
   // Lee los valores del localStorage y maneja posibles datos no válidos
   const initialState = {
-      access: isBrowser ? localStorage.getItem('access_token') : null,
-      user: isBrowser ? safelyParseJSON(localStorage.getItem('user')) : null,
-      isAuthenticated: isBrowser && localStorage.getItem('access_token') ? true : false,
+    access: isBrowser ? localStorage.getItem('access_token') : null,
+    user: isBrowser ? safelyParseJSON(localStorage.getItem('user')) : null,
+    isAuthenticated: isBrowser && localStorage.getItem('access_token') ? true : false,
   };
 
   const { subscribe, set, update } = writable(initialState);
@@ -129,23 +135,23 @@ function createSessionStore() {
         });
       }
     },
-      logout: () => {
-          if (isBrowser) {
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('user');
-              set({
-                  access: null,
-                  user: null,
-                  isAuthenticated: false
-              });
-          }
-      },
-      setUser: (user) => {
-          if (isBrowser && user) {
-              localStorage.setItem('user', JSON.stringify(user));
-              update(state => ({ ...state, user }));
-          }
+    logout: () => {
+      if (isBrowser) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        set({
+          access: null,
+          user: null,
+          isAuthenticated: false
+        });
       }
+    },
+    setUser: (user) => {
+      if (isBrowser && user) {
+        localStorage.setItem('user', JSON.stringify(user));
+        update(state => ({ ...state, user }));
+      }
+    }
   };
 }
 

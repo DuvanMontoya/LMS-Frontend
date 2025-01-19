@@ -1,33 +1,35 @@
-// lib/api/utils/utils.js
+// src/lib/api/utils/utils.js
 const API_URL = "http://localhost:8000/api/";
-
 
 export async function fetchFromAPI(endpoint, authToken, options = {}) {
   const headers = new Headers({
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${authToken}`,
+    'Content-Type': 'application/json',
+    ...options.headers
   });
 
+  if (authToken) {
+    headers.append('Authorization', `Bearer ${authToken}`);
+  }
+
   try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-          method: options.method || 'GET',
-          headers,
-          body: options.body ? JSON.stringify(options.body) : null,
-      });
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: options.method || 'GET',
+      headers,
+      body: options.body ? JSON.stringify(options.body) : null,
+    });
 
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error HTTP: ${response.status}. Mensaje: ${errorText}`);
-      }
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error HTTP: ${response.status}. Mensaje: ${errorText}`);
+    }
 
-      const responseText = await response.text();
-      return responseText ? JSON.parse(responseText) : {};
+    const responseText = await response.text();
+    return responseText ? JSON.parse(responseText) : {};
   } catch (error) {
-      console.error('Error en fetchFromAPI:', error);
-      throw error;
+    console.error('Error en fetchFromAPI:', error);
+    throw error;
   }
 }
-
 
 export const fetchAPI = async (endpoint, method = 'GET', data = null) => {
   const url = `${API_URL}/${endpoint}`;

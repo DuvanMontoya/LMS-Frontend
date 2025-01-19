@@ -1,11 +1,12 @@
-<!-- src/lib/components/study/StudyHeader.svelte -->
 <script>
   import { fade } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
-  
+
   // Props que recibe este componente
   export let searchQuery = '';
   export let filterStatus = 'all';
+
+  // Opcionales (si quieres mostrar contadores de total, completados, etc.)
   export let totalArticles = 0;
   export let completedArticles = 0;
   export let inProgressArticles = 0;
@@ -14,7 +15,7 @@
   const dispatch = createEventDispatcher();
   let showFilters = false;
 
-  // Nuevos estados para filtros avanzados
+  // Filtros avanzados de ejemplo
   let filters = {
     universidad: '',
     facultad: '',
@@ -30,7 +31,7 @@
     publicado: 'all',
     es_publico: 'all'
   };
-  
+
   const statusOptions = [
     { value: 'all', label: 'Todos los artículos', icon: 'book' },
     { value: 'not-started', label: 'Por empezar', icon: 'circle' },
@@ -87,7 +88,7 @@
           <i class="fas fa-book-open"></i>
           <div class="stat-info">
             <div class="stat-value">{totalArticles}</div>
-            <div class="stat-label">Total artículos</div>
+            <div class="stat-label">Total</div>
           </div>
         </div>
         <div class="stat-card completed">
@@ -119,7 +120,7 @@
           aria-label="Buscar artículos"
         />
         {#if searchQuery}
-          <button 
+          <button
             class="clear-search"
             on:click={() => {
               searchQuery = '';
@@ -133,10 +134,10 @@
       </div>
 
       <div class="filters-container">
-        <button 
+        <button
           class:active={showFilters}
           class="filter-toggle"
-          on:click={() => showFilters = !showFilters}
+          on:click={() => (showFilters = !showFilters)}
         >
           <i class="fas fa-sliders-h"></i>
           Filtros avanzados
@@ -166,81 +167,81 @@
               <!-- Institution filters -->
               <div class="filter-group">
                 <label for="universidad-filter">Universidad</label>
-                <select 
+                <select
                   id="universidad-filter"
                   bind:value={filters.universidad}
                   on:change={() => handleAdvancedFilter('universidad', filters.universidad)}
                 >
                   <option value="">Todas las universidades</option>
-                  <!-- Add universities dynamically -->
+                  <!-- Agregar dinámicamente opciones -->
                 </select>
               </div>
 
               <div class="filter-group">
                 <label for="facultad-filter">Facultad</label>
-                <select 
+                <select
                   id="facultad-filter"
                   bind:value={filters.facultad}
                   on:change={() => handleAdvancedFilter('facultad', filters.facultad)}
                 >
                   <option value="">Todas las facultades</option>
-                  <!-- Add faculties dynamically -->
+                  <!-- Agregar dinámicamente opciones -->
                 </select>
               </div>
 
               <div class="filter-group">
                 <label for="pregrado-filter">Pregrado</label>
-                <select 
+                <select
                   id="pregrado-filter"
                   bind:value={filters.pregrado}
                   on:change={() => handleAdvancedFilter('pregrado', filters.pregrado)}
                 >
                   <option value="">Todos los pregrados</option>
-                  <!-- Add programs dynamically -->
+                  <!-- Agregar dinámicamente opciones -->
                 </select>
               </div>
 
               <!-- Academic filters -->
               <div class="filter-group">
                 <label for="curso-filter">Curso</label>
-                <select 
+                <select
                   id="curso-filter"
                   bind:value={filters.curso}
                   on:change={() => handleAdvancedFilter('curso', filters.curso)}
                 >
                   <option value="">Todos los cursos</option>
-                  <!-- Add courses dynamically -->
+                  <!-- Agregar dinámicamente opciones -->
                 </select>
               </div>
 
               <div class="filter-group">
                 <label for="tipo-filter">Tipo</label>
-                <select 
+                <select
                   id="tipo-filter"
                   bind:value={filters.tipo}
                   on:change={() => handleAdvancedFilter('tipo', filters.tipo)}
                 >
                   <option value="">Todos los tipos</option>
-                  <!-- Add types dynamically -->
+                  <!-- Agregar dinámicamente opciones -->
                 </select>
               </div>
 
               <div class="filter-group">
                 <label for="area-filter">Área</label>
-                <select 
+                <select
                   id="area-filter"
                   bind:value={filters.area}
                   on:change={() => handleAdvancedFilter('area', filters.area)}
                 >
                   <option value="">Todas las áreas</option>
-                  <!-- Add areas dynamically -->
+                  <!-- Agregar dinámicamente opciones -->
                 </select>
               </div>
 
               <!-- Additional filters -->
               <div class="filter-group">
                 <label for="semestre-filter">Semestre</label>
-                <select 
+                <select
                   id="semestre-filter"
                   bind:value={filters.semestre}
                   on:change={() => handleAdvancedFilter('semestre', filters.semestre)}
@@ -254,7 +255,7 @@
 
               <div class="filter-group">
                 <label for="publicado-filter">Estado de publicación</label>
-                <select 
+                <select
                   id="publicado-filter"
                   bind:value={filters.publicado}
                   on:change={() => handleAdvancedFilter('publicado', filters.publicado)}
@@ -267,13 +268,13 @@
 
               <div class="filter-group">
                 <label for="acceso-filter">Acceso</label>
-                <select 
+                <select
                   id="acceso-filter"
                   bind:value={filters.acceso}
                   on:change={() => handleAdvancedFilter('acceso', filters.acceso)}
                 >
                   <option value="">Todos los accesos</option>
-                  <!-- Add access types dynamically -->
+                  <!-- Añade los tipos de acceso dinámicamente -->
                 </select>
               </div>
             </div>
@@ -299,18 +300,15 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
   }
-
   .header-content {
     padding: 2rem;
   }
-
   .header-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 2rem;
   }
-
   .title-section h1 {
     font-size: 2rem;
     font-weight: 700;
@@ -318,17 +316,14 @@
     margin: 0 0 0.5rem 0;
     line-height: 1.2;
   }
-
   .subtitle {
     color: #6b7280;
     font-size: 1.1rem;
   }
-
   .stats-section {
     display: flex;
     gap: 1rem;
   }
-
   .stat-card {
     display: flex;
     align-items: center;
@@ -339,12 +334,10 @@
     border: 1px solid #e5e7eb;
     transition: all 0.2s ease;
   }
-
   .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   }
-
   .stat-card i {
     font-size: 1.5rem;
     width: 40px;
@@ -354,45 +347,37 @@
     justify-content: center;
     border-radius: 10px;
   }
-
   .stat-card.total i {
     background: #dbeafe;
     color: #2563eb;
   }
-
   .stat-card.completed i {
     background: #d1fae5;
     color: #059669;
   }
-
   .stat-card.progress i {
     background: #fef3c7;
     color: #d97706;
   }
-
   .stat-value {
     font-size: 1.5rem;
     font-weight: 700;
     color: #1f2937;
     line-height: 1;
   }
-
   .stat-label {
     font-size: 0.875rem;
     color: #6b7280;
     margin-top: 0.25rem;
   }
-
   .filters-section {
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
-
   .search-box {
     position: relative;
   }
-
   .search-box input {
     width: 100%;
     padding: 0.75rem 1rem 0.75rem 2.5rem;
@@ -401,13 +386,11 @@
     font-size: 0.875rem;
     transition: all 0.2s ease;
   }
-
   .search-box input:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
   .search-box i {
     position: absolute;
     left: 1rem;
@@ -415,7 +398,6 @@
     transform: translateY(-50%);
     color: #9ca3af;
   }
-
   .clear-search {
     position: absolute;
     right: 1rem;
@@ -426,11 +408,9 @@
     color: #9ca3af;
     cursor: pointer;
   }
-
   .filters-container {
     position: relative;
   }
-
   .filter-toggle {
     width: 100%;
     display: flex;
@@ -444,12 +424,10 @@
     font-size: 0.875rem;
     transition: all 0.2s ease;
   }
-
   .filter-toggle.active {
     background: #f3f4f6;
     border-color: #d1d5db;
   }
-
   .filters-panel {
     position: absolute;
     top: calc(100% + 0.5rem);
@@ -463,26 +441,22 @@
     z-index: 10;
     animation: slideDown 0.3s ease-out;
   }
-
   .filters-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
-
   .filter-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
-
   .filter-group label {
     font-size: 0.875rem;
     font-weight: 500;
     color: #374151;
   }
-
   .filter-group select {
     padding: 0.5rem;
     border: 1px solid #e5e7eb;
@@ -492,19 +466,16 @@
     background-color: white;
     transition: all 0.2s ease;
   }
-
   .filter-group select:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
   .status-options {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-
   .status-option {
     display: flex;
     align-items: center;
@@ -517,25 +488,21 @@
     font-size: 0.875rem;
     transition: all 0.2s ease;
   }
-
   .status-option:hover {
     background: #f9fafb;
     border-color: #d1d5db;
   }
-
   .status-option.active {
     background: #eff6ff;
     border-color: #3b82f6;
     color: #1d4ed8;
   }
-
   .filters-actions {
     display: flex;
     justify-content: flex-end;
     padding-top: 1rem;
     border-top: 1px solid #e5e7eb;
   }
-
   .clear-filters {
     display: flex;
     align-items: center;
@@ -548,39 +515,31 @@
     cursor: pointer;
     transition: color 0.2s ease;
   }
-
   .clear-filters:hover {
     color: #ef4444;
   }
-
   @media (max-width: 1024px) {
     .header-top {
       flex-direction: column;
       gap: 1.5rem;
     }
-
     .stats-section {
       width: 100%;
     }
-
     .stat-card {
       flex: 1;
     }
   }
-
   @media (max-width: 768px) {
     .header-content {
       padding: 1.5rem;
     }
-
     .stats-section {
       flex-direction: column;
     }
-
     .stat-card {
       width: 100%;
     }
-
     .filters-panel {
       position: fixed;
       top: 50%;
@@ -592,21 +551,17 @@
       overflow-y: auto;
     }
   }
-
   @media (max-width: 640px) {
     .title-section h1 {
       font-size: 1.5rem;
     }
-
     .subtitle {
       font-size: 0.875rem;
     }
-
     .filters-grid {
       grid-template-columns: 1fr;
     }
   }
-
   @keyframes slideDown {
     from {
       opacity: 0;

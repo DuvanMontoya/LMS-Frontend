@@ -2,21 +2,77 @@
 import { fetchFromAPI } from '../utils/utils';
 
 const studyService = {
-  // Obtener lista de artículos para estudio
-  async getStudyArticles(token) {
+
+  async checkEnrollmentStatus(articleId, token) {
     try {
-      const response = await fetchFromAPI('study/', token);
-      return response;
+      const response = await fetchFromAPI(`articulos/${articleId}/matriculado/`, token);
+      return {
+        isEnrolled: response.matriculado || false,
+        hasPendingRequest: response.solicitud_pendiente || false,
+        hasRejectedRequest: response.solicitud_rechazada || false
+      };
     } catch (error) {
-      console.error('Error fetching study articles:', error);
+      console.error('Error checking enrollment status:', error);
       throw error;
     }
   },
 
-  // Obtener detalle de un artículo con sus preguntas
+  // Verificar estado de acceso
+  async checkAccessStatus(articleId, token) {
+    try {
+      const response = await fetchFromAPI(`articulos/${articleId}/estado-acceso/`, token);
+      return {
+        hasAccess: response.tiene_acceso || false
+      };
+    } catch (error) {
+      console.error('Error checking access status:', error);
+      throw error;
+    }
+  },
+
+  async requestEnrollment(articleId, reason, token) {
+    try {
+      const response = await fetchFromAPI(`articulos/${articleId}/solicitar-matricula/`, token, {
+        method: 'POST',
+        body: {
+          motivo: reason
+        }
+      });
+      return response;
+    } catch (error) {
+      console.error('Error requesting enrollment:', error);
+      throw error;
+    }
+  },
+
+  // Obtener lista de artículos públicos para estudio
+  async getPublicStudyArticles() {
+    try {
+      const response = await fetch('http://localhost:8000/api/study/');
+      if (!response.ok) {
+        throw new Error(`Error fetching public study articles: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching public study articles:', error);
+      throw error;
+    }
+  },
+
+  // Obtener lista de mis estudios (requiere autenticación)
+  async getMyStudies(token) {
+    try {
+      const response = await fetchFromAPI('study/mis-estudios/', token);
+      return response;
+    } catch (error) {
+      console.error('Error fetching my studies:', error);
+      throw error;
+    }
+  },
+
+  // Obtener detalle de un artículo con sus preguntas (requiere autenticación)
   async getStudyArticle(id, token) {
     try {
-      // Ajusta la URL a la tuya
       const response = await fetchFromAPI(`study/${id}/iniciar/`, token);
       return response;
     } catch (error) {
@@ -24,6 +80,27 @@ const studyService = {
       throw error;
     }
   },
+
+  // Obtener lista de artículos para estudio (públicos y privados)
+  async getStudyArticles(token = null) {
+    try {
+      if (token) {
+        // Si hay token, obtener artículos privados
+        const response = await fetchFromAPI('study/', token);
+        return response;
+      } else {
+        // Si no hay token, obtener artículos públicos sin encabezado de autorización
+        const response = await fetch('http://localhost:8000/api/study/');
+        if (!response.ok) {
+          throw new Error(`Error fetching public study articles: ${response.statusText}`);
+        }
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error fetching study articles:', error);
+      throw error;
+    }
+  },  
 
   // Calificar una pregunta
   async rateQuestion(articleId, questionId, rating, token) {
@@ -72,17 +149,6 @@ const studyService = {
       return response;
     } catch (error) {
       console.error('Error toggling comment like:', error);
-      throw error;
-    }
-  },
-
-  // Obtener mis artículos en estudio
-  async getMyStudies(token) {
-    try {
-      const response = await fetchFromAPI('study/mis-estudios/', token);
-      return response;
-    } catch (error) {
-      console.error('Error fetching my studies:', error);
       throw error;
     }
   },

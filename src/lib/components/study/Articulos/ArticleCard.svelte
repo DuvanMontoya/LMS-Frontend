@@ -1,336 +1,621 @@
-<!-- src/lib/components/study/ArticleCard.svelte -->
+<!-- src/lib/components/study/Articulos/ArticleCard.svelte -->
 <script>
-  import { goto } from '$app/navigation';
-  import ProgressBar from '../ProgressBar.svelte';
+import { onMount } from 'svelte';
+import { sessionStore } from '$lib/stores/sessionStore';
+import studyService from '$lib/api/study/studyService';
+import { createEventDispatcher } from 'svelte';
+import PDFViewer from './PDFViewer.svelte';
+import { CheckCircle, BookOpen, Clock } from 'lucide-svelte';
 
-  // Recibimos el artículo como prop
-  export let article;
+const dispatch = createEventDispatcher();
 
-  function handleClick() {
-    // Ir a la página de estudio del artículo
-    // Ajusta la ruta si tu routing es distinto
-    goto(`/study/${article.id}`);
+export let article;
+
+let showPDFViewer = false;
+let isLoading = false;
+let errorMessage = '';
+let buttonStates = {
+  isEnrolled: false,
+  hasPendingRequest: false,
+  hasRejectedRequest: false,
+  hasAccess: false,
+  isAuthor: false
+};
+
+// Estado local para la solicitud de matrícula
+let showEnrollmentModal = false;
+let enrollmentReason = '';
+
+$: accessToken = $sessionStore.access;
+$: isAuthenticated = $sessionStore.isAuthenticated;
+$: userId = $sessionStore?.user?.id;
+
+
+function formatRating(rating) {
+  if (rating === null || rating === undefined || isNaN(rating)) {
+    return 'N/A';
+  }
+  return Number(rating).toFixed(1);
+}
+
+onMount(async () => {
+  if (isAuthenticated) {
+    await checkArticleStatus();
+  }
+});
+
+async function checkArticleStatus() {
+  try {
+    const [enrollmentResponse, accessResponse] = await Promise.all([
+      studyService.checkEnrollmentStatus(article.id, accessToken),
+      studyService.checkAccessStatus(article.id, accessToken)
+    ]);
+
+    buttonStates = {
+      isEnrolled: enrollmentResponse.isEnrolled,
+      hasPendingRequest: enrollmentResponse.hasPendingRequest,
+      hasRejectedRequest: enrollmentResponse.hasRejectedRequest,
+      hasAccess: accessResponse.hasAccess,
+      isAuthor: article.autor?.usuario?.id === userId
+    };
+  } catch (error) {
+    console.error('Error checking article status:', error);
+    errorMessage = 'Error al verificar el estado del artículo';
+  }
+}
+
+
+
+
+
+
+
+const showLoginModal = () => {
+  dispatch('showLoginModal');
+};
+
+const showSubscriptionModal = () => {
+  dispatch('showSubscriptionModal');
+};
+
+const viewPDF = () => {
+  if (!article.archivo_adjunto) {
+    dispatch('notification', {
+      type: 'error',
+      message: 'No hay archivo PDF disponible'
+    });
+    return;
+  }
+  showPDFViewer = true;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Funciones de acción
+const viewArticle = () => {
+  if (!isAuthenticated) {
+    if (article.es_publico || article.acceso === 'gratis') {
+      window.location.href = `/study/${article.id}`;
+    } else {
+      dispatch('showLoginModal');
+    }
+    return;
   }
 
-  // Si en tu JSON final se llama "progreso" directamente (no hay un objeto "progreso")
-  // Usa lo siguiente:
-  $: progress = article.progreso || 0;
+  if (buttonStates.hasAccess || buttonStates.isAuthor || 
+      article.es_publico || article.acceso === 'gratis') {
+    window.location.href = `/study/${article.id}`;
+  } else if (article.acceso === 'suscripcion') {
+    dispatch('showSubscriptionModal');
+  } else {
+    showEnrollmentModal = true;
+  }
+};
 
-  // Manejamos el estado en base a 'progress'
-  $: status = progress === 0 ? 'not-started'
-               : progress === 100 ? 'completed'
-               : 'in-progress';
-  
-  $: statusText =
-    status === 'not-started' ? 'Por empezar'
-    : status === 'completed' ? 'Completado'
-    : 'En progreso';
 
-  // Clases CSS para el chip
-  $: statusClass =
-    status === 'not-started' ? 'bg-gray-100 text-gray-600'
-    : status === 'completed' ? 'bg-green-100 text-green-700'
-    : 'bg-blue-100 text-blue-700';
+
+function getButtonConfig() {
+  if (!isAuthenticated) {
+    return {
+      text: article.es_publico || article.acceso === 'gratis' ? 
+        'Ver Solución' : 'Iniciar sesión',
+      action: article.es_publico || article.acceso === 'gratis' ? 
+        viewArticle : showLoginModal,
+      icon: article.es_publico || article.acceso === 'gratis' ? 
+        BookOpen : Clock
+    };
+  }
+
+  if (buttonStates.hasAccess || buttonStates.isAuthor || 
+      article.es_publico || article.acceso === 'gratis') {
+    return {
+      text: 'Ver Solución',
+      action: viewArticle,
+      icon: BookOpen
+    };
+  }
+
+  if (buttonStates.hasPendingRequest) {
+    return {
+      text: 'Solicitud Pendiente',
+      action: null,
+      icon: Clock
+    };
+  }
+
+  if (article.acceso === 'suscripcion') {
+    return {
+      text: 'Suscribirse',
+      action: showSubscriptionModal,
+      icon: CheckCircle
+    };
+  }
+
+  return {
+    text: 'Solicitar Solución',
+    action: () => showEnrollmentModal = true,
+    icon: CheckCircle
+  };
+}
+
+
+function getAccessLabel() {
+  if (article.es_publico) return 'Gratuito';
+  switch (article.acceso) {
+    case 'gratis': return 'Gratuito';
+    case 'pago': return 'De pago';
+    case 'suscripcion': return 'Requiere Suscripción';
+    default: return '';
+  }
+}
+
+async function handleEnrollmentSubmit() {
+  if (!enrollmentReason.trim()) {
+    errorMessage = 'Por favor, ingresa un motivo para la solicitud';
+    return;
+  }
+
+  isLoading = true;
+  try {
+    await studyService.requestEnrollment(article.id, enrollmentReason, accessToken);
+    buttonStates.hasPendingRequest = true;
+    showEnrollmentModal = false;
+    dispatch('notification', {
+      type: 'success',
+      message: 'Solicitud enviada correctamente'
+    });
+  } catch (error) {
+    errorMessage = error.message;
+    dispatch('notification', {
+      type: 'error',
+      message: error.message
+    });
+  } finally {
+    isLoading = false;
+  }
+}
+
+// Duplicate function removed
+
+// Duplicate functions removed
 </script>
 
-<div
-  class="article-card"
-  role="button"
-  on:click={handleClick}
-  on:keydown={(e) => e.key === 'Enter' && handleClick()}
-  tabindex="0"
->
-  <div class="media-section">
-    {#if article.portada_articulo}
-      <img
-        src={article.portada_articulo}
-        alt={article.titulo}
-        class="card-image"
-      />
-    {:else}
-      <div class="placeholder-image">
-        <i class="fas fa-book-open"></i>
-      </div>
+<div class="article-card">
+  <!-- Etiquetas -->
+  <div class="card-tags">
+    {#if article.es_destacado}
+      <span class="tag featured">
+        <i class="fas fa-star"></i>
+        Destacado
+      </span>
     {/if}
-
-    <!-- Estado de publicación -->
-    {#if article.publicado}
-      <div class="publish-badge">
-        <i class="fas fa-check-circle"></i>
-        <span>Publicado</span>
-      </div>
+    {#if getAccessLabel()}
+      <span class="tag access">
+        <i class="fas fa-key"></i>
+        {getAccessLabel()}
+      </span>
     {/if}
   </div>
 
   <div class="card-content">
     <!-- Información institucional -->
-    <div class="institution-info">
-      {#if article.universidad?.nombre}
-        <span class="info-tag university">
-          <i class="fas fa-university"></i>
-          {article.universidad.nombre}
-        </span>
-      {/if}
+    {#if article.universidad?.nombre}
+      <div class="institution">
+        <i class="fas fa-university"></i>
+        {article.universidad.nombre}
+      </div>
+    {/if}
+
+    <h3 class="title">{article.titulo}</h3>
+    <p class="description">{article.descripcion || 'Sin descripción'}</p>
+
+    <!-- Detalles académicos -->
+    <div class="academic-details">
       {#if article.pregrado?.nombre}
-        <span class="info-tag program">
+        <span class="detail">
           <i class="fas fa-graduation-cap"></i>
           {article.pregrado.nombre}
         </span>
       {/if}
-    </div>
-
-    <h3 class="title">{article.titulo}</h3>
-
-    {#if article.descripcion}
-      <p class="description">{article.descripcion}</p>
-    {/if}
-
-    <!-- Información detallada -->
-    <div class="details-grid">
-      {#if article.profesor}
-        <div class="detail-item">
-          <i class="fas fa-chalkboard-teacher"></i>
-          <span>{article.profesor}</span>
-        </div>
-      {/if}
-
       {#if article.curso?.nombre}
-        <div class="detail-item">
+        <span class="detail">
           <i class="fas fa-book"></i>
-          <span>{article.curso.nombre}</span>
-        </div>
+          {article.curso.nombre}
+        </span>
       {/if}
-
-      {#if article.tipo?.nombre}
-        <div class="detail-item">
-          <i class="fas fa-tag"></i>
-          <span>{article.tipo.nombre}</span>
-        </div>
-      {/if}
-
-      {#if article.semestre}
-        <div class="detail-item">
-          <i class="fas fa-calendar"></i>
-          <span>Semestre {article.semestre}</span>
-        </div>
-      {/if}
-
-      {#if article.posicion}
-        <div class="detail-item">
-          <i class="fas fa-sort-numeric-up"></i>
-          <span>Posición {article.posicion}</span>
-        </div>
+      {#if article.profesor}
+        <span class="detail">
+          <i class="fas fa-chalkboard-teacher"></i>
+          {article.profesor}
+        </span>
       {/if}
     </div>
 
-    <div class="metadata">
-      <span class="author">
-        <i class="fas fa-user"></i>
-        {article.autor_nombre}
+    <!-- Estadísticas -->
+    <div class="stats">
+      <span class="stat">
+        <i class="fas fa-eye"></i>
+        {article.num_vistas || 0} vistas
       </span>
-
-      <!-- Ejemplo de status (para "Por empezar", "En Progreso", "Completado") -->
-      <span class="status" class:completed={status === 'completed'}>
-        <i class="fas fa-circle"></i>
-        {statusText}
+      <span class="stat">
+        <i class="fas fa-heart"></i>
+        {article.num_favoritos || 0} favoritos
       </span>
+      {#if article.calificacion_promedio !== null && article.calificacion_promedio !== undefined}
+        <span class="stat">
+          <i class="fas fa-star"></i>
+          {formatRating(article.calificacion_promedio)}
+        </span>
+      {/if}
     </div>
 
-    <div class="progress-section">
-      <ProgressBar {progress} size="small" />
-      <span class="progress-text">
-        {progress}% completado
-      </span>
-    </div>
+    <!-- Acciones -->
+    <div class="actions">
+      {#if true}
+        {@const buttonConfig = getButtonConfig()}
+        <button 
+          class="primary-button"
+          class:disabled={buttonConfig.action === null}
+          on:click={() => buttonConfig.action && buttonConfig.action()}
+          disabled={buttonConfig.action === null || isLoading}
+        >
+          <svelte:component this={buttonConfig.icon} size={20} />
+          {buttonConfig.text}
+        </button>
+      {/if}
+  
+      {#if article.archivo_adjunto}
+        <button class="secondary-button" on:click={() => viewPDF()}>
+          <i class="fas fa-file-pdf"></i>
+          Ver PDF
+        </button>
+      {/if}
+  </div>
   </div>
 </div>
 
+
+<!-- Modal de solicitud de matrícula -->
+{#if showEnrollmentModal}
+  <div class="modal">
+    <div class="modal-content">
+      <h2>Solicitar acceso al artículo</h2>
+      <p>Por favor, explica por qué deseas acceder a este artículo:</p>
+      <textarea
+        bind:value={enrollmentReason}
+        placeholder="Escribe tu motivo aquí..."
+        rows="4"
+      ></textarea>
+      {#if errorMessage}
+        <p class="error">{errorMessage}</p>
+      {/if}
+      <div class="modal-actions">
+        <button 
+          class="cancel-button"
+          on:click={() => showEnrollmentModal = false}
+          disabled={isLoading}
+        >
+          Cancelar
+        </button>
+        <button 
+          class="submit-button"
+          on:click={handleEnrollmentSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Enviando...' : 'Enviar solicitud'}
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Visor de PDF -->
+{#if showPDFViewer}
+  <PDFViewer
+    url={article.archivo_adjunto}
+    title={article.titulo}
+    on:close={() => showPDFViewer = false}
+  />
+{/if}
+
 <style>
-  .article-card {
-    position: relative;
-    background: #ffffff;
-    border-radius: 20px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
+/* Estilos base */
+.article-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e5e7eb;
+}
 
-  .article-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-  }
+.article-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
 
-  .media-section {
-    position: relative;
-    height: 200px;
-    overflow: hidden;
-  }
+/* Tags */
+.card-tags {
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
 
-  .card-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
 
-  .article-card:hover .card-image {
-    transform: scale(1.05);
-  }
+.tag.featured {
+  background-color: #fef3c7;
+  color: #d97706;
+}
 
-  .placeholder-image {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #9ca3af;
-    font-size: 2.5rem;
-  }
+.tag.access {
+  background-color: #d1fae5;
+  color: #059669;
+}
 
-  .publish-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    background: rgba(16, 185, 129, 0.9);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    backdrop-filter: blur(4px);
-  }
+/* Content */
+.card-content {
+  padding: 1.5rem;
+}
 
+.institution {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.description {
+  color: #4b5563;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Academic details */
+.academic-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Stats */
+.stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.primary-button,
+.secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.primary-button {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  flex: 1;
+}
+
+.primary-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.primary-button:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.secondary-button:hover {
+  background-color: #e5e7eb;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Continuación de los estilos del ArticleCard.svelte */
+
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.modal-content textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+.modal-content textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cancel-button,
+.submit-button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.cancel-button {
+  background-color: white;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.submit-button {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.submit-button:disabled,
+.cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
   .card-content {
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
-  .institution-info {
-    display: flex;
+  .actions {
+    flex-direction: column;
+  }
+
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .stats {
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 1rem;
   }
-
-  .info-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-
-  .university {
-    background: #dbeafe;
-    color: #1d4ed8;
-  }
-
-  .program {
-    background: #e0e7ff;
-    color: #4338ca;
-  }
-
-  .title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 0.75rem;
-    line-height: 1.4;
-  }
-
-  .description {
-    color: #4b5563;
-    font-size: 0.875rem;
-    line-height: 1.6;
-    margin-bottom: 1rem;
-  }
-
-  .details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 1rem;
-    padding: 1rem;
-    background: #f8fafc;
-    border-radius: 12px;
-  }
-
-  .detail-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    color: #4b5563;
-  }
-
-  .detail-item i {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    border-radius: 6px;
-    color: #6b7280;
-  }
-
-  .metadata {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding: 0.75rem 0;
-    border-top: 1px solid #e5e7eb;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .author {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #6b7280;
-    font-size: 0.875rem;
-  }
-
-  .status {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: #f3f4f6;
-    color: #6b7280;
-  }
-
-  .status.completed {
-    background: #d1fae5;
-    color: #059669;
-  }
-
-  .progress-section {
-    padding: 1rem;
-    background: #f9fafb;
-    border-radius: 12px;
-  }
-
-  .progress-text {
-    display: block;
-    text-align: right;
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-top: 0.5rem;
-  }
-
-  @media (max-width: 640px) {
-    .details-grid {
-      grid-template-columns: 1fr;
-    }
-  }
+}
 </style>

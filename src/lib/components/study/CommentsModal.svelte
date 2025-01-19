@@ -778,4 +778,26 @@
         padding-left: 1rem;
       }
     }
+
+    .comments-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 40vh; /* Ajusta a tu gusto */
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 0.5rem;
+    margin: 0 -0.5rem;
+  }
+
+  .replies {
+    margin: 0 1rem 1rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid #e2e8f0;
+    max-height: 300px; /* para subrespuestas, si quieres */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
   </style>  

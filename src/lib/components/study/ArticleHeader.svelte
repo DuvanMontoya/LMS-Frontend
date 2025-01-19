@@ -1,174 +1,171 @@
 <!-- src/lib/components/study/ArticleHeader.svelte -->
 <script>
-    import { fade } from 'svelte/transition';
-    import ProgressBar from '$lib/components/study/ProgressBar.svelte';
-    
-    // El artículo (y su progreso) se recibe como prop
-    export let article = null; // Asignamos un valor por defecto
-    export let progress;
-  
-    // En tu caso, si 'article.progreso' es un entero, podrías
-    // no necesitar 'progress' como prop por separado.
-    // Lo dejamos si lo deseas.
-  </script>
-  
-  {#if article}
-  <header class="article-header" transition:fade>
-    <div class="header-content">
-      <!-- Migas de pan -->
-      <div class="breadcrumbs">
-        {#if article.universidad?.nombre}
-          <span class="breadcrumb-item">
-            <i class="fas fa-university"></i>
-            {article.universidad.nombre}
+  import { fade } from 'svelte/transition';
+  import ProgressBar from '$lib/components/study/ProgressBar.svelte';
+
+  export let article = null;
+  export let progress = 0;
+</script>
+
+{#if article}
+<header class="article-header" transition:fade>
+  <div class="header-content">
+    <!-- Migas de pan -->
+    <div class="breadcrumbs">
+      {#if article.universidad?.nombre}
+        <span class="breadcrumb-item">
+          <i class="fas fa-university"></i>
+          {article.universidad.nombre}
+        </span>
+      {/if}
+      {#if article.facultad?.nombre}
+        <span class="separator">/</span>
+        <span class="breadcrumb-item">
+          <i class="fas fa-building"></i>
+          {article.facultad.nombre}
+        </span>
+      {/if}
+      {#if article.pregrado?.nombre}
+        <span class="separator">/</span>
+        <span class="breadcrumb-item">
+          <i class="fas fa-graduation-cap"></i>
+          {article.pregrado.nombre}
+        </span>
+      {/if}
+    </div>
+
+    <div class="main-info">
+      <div class="title-section">
+        <h1>{article.titulo || 'Sin título'}</h1>
+        {#if article.descripcion}
+          <p class="description">{article.descripcion}</p>
+        {/if}
+      </div>
+
+      <div class="status-badges">
+        {#if article.publicado}
+          <span class="badge published">
+            <i class="fas fa-check-circle"></i>
+            Publicado
           </span>
         {/if}
-        {#if article.facultad?.nombre}
-          <span class="separator">/</span>
-          <span class="breadcrumb-item">
-            <i class="fas fa-building"></i>
-            {article.facultad.nombre}
+        {#if article.es_publico}
+          <span class="badge public">
+            <i class="fas fa-globe"></i>
+            Público
           </span>
         {/if}
-        {#if article.pregrado?.nombre}
-          <span class="separator">/</span>
-          <span class="breadcrumb-item">
-            <i class="fas fa-graduation-cap"></i>
-            {article.pregrado.nombre}
+        {#if article.es_destacado}
+          <span class="badge featured">
+            <i class="fas fa-star"></i>
+            Destacado
           </span>
         {/if}
       </div>
-  
-      <div class="main-info">
-        <div class="title-section">
-          <h1>{article.titulo || 'Sin título'}</h1>
-          {#if article.descripcion}
-            <p class="description">{article.descripcion}</p>
-          {/if}
+    </div>
+
+    <div class="meta-grid">
+      {#if article.curso?.nombre}
+        <div class="meta-card course">
+          <div class="meta-icon">
+            <i class="fas fa-book"></i>
+          </div>
+          <div class="meta-info">
+            <span class="meta-label">Curso</span>
+            <span class="meta-value">{article.curso.nombre}</span>
+          </div>
         </div>
-  
-        <div class="status-badges">
-          {#if article.publicado}
-            <span class="badge published">
-              <i class="fas fa-check-circle"></i>
-              Publicado
-            </span>
-          {/if}
-          {#if article.es_publico}
-            <span class="badge public">
-              <i class="fas fa-globe"></i>
-              Público
-            </span>
-          {/if}
-          {#if article.es_destacado}
-            <span class="badge featured">
-              <i class="fas fa-star"></i>
-              Destacado
-            </span>
-          {/if}
+      {/if}
+
+      {#if article.profesor}
+        <div class="meta-card professor">
+          <div class="meta-icon">
+            <i class="fas fa-chalkboard-teacher"></i>
+          </div>
+          <div class="meta-info">
+            <span class="meta-label">Profesor</span>
+            <span class="meta-value">{article.profesor}</span>
+          </div>
         </div>
-      </div>
-  
-      <div class="meta-grid">
-        {#if article.curso?.nombre}
-          <div class="meta-card course">
-            <div class="meta-icon">
-              <i class="fas fa-book"></i>
-            </div>
-            <div class="meta-info">
-              <span class="meta-label">Curso</span>
-              <span class="meta-value">{article.curso.nombre}</span>
-            </div>
+      {/if}
+
+      {#if article.tipo?.nombre}
+        <div class="meta-card type">
+          <div class="meta-icon">
+            <i class="fas fa-tag"></i>
           </div>
-        {/if}
-  
-        {#if article.profesor}
-          <div class="meta-card professor">
-            <div class="meta-icon">
-              <i class="fas fa-chalkboard-teacher"></i>
-            </div>
-            <div class="meta-info">
-              <span class="meta-label">Profesor</span>
-              <span class="meta-value">{article.profesor}</span>
-            </div>
+          <div class="meta-info">
+            <span class="meta-label">Tipo</span>
+            <span class="meta-value">{article.tipo.nombre}</span>
           </div>
-        {/if}
-  
-        {#if article.tipo?.nombre}
-          <div class="meta-card type">
-            <div class="meta-icon">
-              <i class="fas fa-tag"></i>
-            </div>
-            <div class="meta-info">
-              <span class="meta-label">Tipo</span>
-              <span class="meta-value">{article.tipo.nombre}</span>
-            </div>
-          </div>
-        {/if}
-  
-        {#if article.posicion !== undefined && article.posicion !== null}
-          <div class="meta-card position">
-            <div class="meta-icon">
-              <i class="fas fa-sort-numeric-up"></i>
-            </div>
-            <div class="meta-info">
-              <span class="meta-label">Posición</span>
-              <span class="meta-value">#{article.posicion}</span>
-            </div>
-          </div>
-        {/if}
-  
-        {#if article.semestre}
-          <div class="meta-card semester">
-            <div class="meta-icon">
-              <i class="fas fa-calendar-alt"></i>
-            </div>
-            <div class="meta-info">
-              <span class="meta-label">Semestre</span>
-              <span class="meta-value">{article.semestre}</span>
-            </div>
-          </div>
-        {/if}
-  
-        {#if article.tiempo_lectura}
-          <div class="meta-card reading-time">
-            <div class="meta-icon">
-              <i class="fas fa-clock"></i>
-            </div>
-            <div class="meta-info">
-              <span class="meta-label">Tiempo de lectura</span>
-              <span class="meta-value">{article.tiempo_lectura} minutos</span>
-            </div>
-          </div>
-        {/if}
-      </div>
-  
-      <!-- Sección de progreso -->
-      <div class="progress-section">
-        <div class="progress-info">
-          <h3>Progreso de lectura</h3>
-          <span class="progress-percentage">{progress}%</span>
         </div>
-        <ProgressBar {progress} />
-      </div>
-  
-      {#if article.temas?.length > 0}
-        <div class="topics-section">
-          <h4>Temas</h4>
-          <div class="topics-list">
-            {#each article.temas as tema}
-              <span class="topic-tag">
-                <i class="fas fa-hashtag"></i>
-                {tema.nombre}
-              </span>
-            {/each}
+      {/if}
+
+      {#if article.posicion !== undefined && article.posicion !== null}
+        <div class="meta-card position">
+          <div class="meta-icon">
+            <i class="fas fa-sort-numeric-up"></i>
+          </div>
+          <div class="meta-info">
+            <span class="meta-label">Posición</span>
+            <span class="meta-value">#{article.posicion}</span>
+          </div>
+        </div>
+      {/if}
+
+      {#if article.semestre}
+        <div class="meta-card semester">
+          <div class="meta-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="meta-info">
+            <span class="meta-label">Semestre</span>
+            <span class="meta-value">{article.semestre}</span>
+          </div>
+        </div>
+      {/if}
+
+      {#if article.tiempo_lectura}
+        <div class="meta-card reading-time">
+          <div class="meta-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+          <div class="meta-info">
+            <span class="meta-label">Tiempo de lectura</span>
+            <span class="meta-value">{article.tiempo_lectura} minutos</span>
           </div>
         </div>
       {/if}
     </div>
-  </header>
-  {/if}
-  
+
+    <!-- Sección de progreso -->
+    <div class="progress-section">
+      <div class="progress-info">
+        <h3>Progreso de lectura</h3>
+        <span class="progress-percentage">{progress}%</span>
+      </div>
+      <ProgressBar {progress} />
+    </div>
+
+    {#if article.temas?.length > 0}
+      <div class="topics-section">
+        <h4>Temas</h4>
+        <div class="topics-list">
+          {#each article.temas as tema}
+            <span class="topic-tag">
+              <i class="fas fa-hashtag"></i>
+              {tema.nombre}
+            </span>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+</header>
+{/if}
+
+
+
   <style>
     .article-header {
       background: linear-gradient(145deg, #ffffff, #f8fafc);
