@@ -74,12 +74,13 @@ export async function getEvaluacionById(id, token) {
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error(
-          "Sesión expirada o inválida. Por favor, inicia sesión nuevamente."
+          "Sesión expirada o inválida. Por favor, inicia sesión nuevamente.",
         );
       }
       const errorData = await response.json();
       throw new Error(
-        errorData.detail || `Error al obtener la evaluación: ${response.status}`
+        errorData.detail ||
+          `Error al obtener la evaluación: ${response.status}`,
       );
     }
 
@@ -99,7 +100,7 @@ export async function getResultadosEvaluacion(evaluacionId, token) {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -110,7 +111,7 @@ export async function getResultadosEvaluacion(evaluacionId, token) {
       }
       const errorData = await response.json();
       throw new Error(
-        errorData.detail || "Error al obtener resultados de la evaluación"
+        errorData.detail || "Error al obtener resultados de la evaluación",
       );
     }
 
@@ -138,13 +139,16 @@ export async function getEvaluaciones(authToken) {
  */
 export async function iniciarEvaluacion(evaluacionId, authToken) {
   try {
-    const response = await fetch(`${API_URL}evaluaciones/${evaluacionId}/iniciar/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      `${API_URL}evaluaciones/${evaluacionId}/iniciar/`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -158,12 +162,11 @@ export async function iniciarEvaluacion(evaluacionId, authToken) {
   }
 }
 
-
 export async function enviarEvaluacion(
   evaluacionId,
   intentoId,
   respuestas,
-  authToken
+  authToken,
 ) {
   const url = `${API_URL}evaluaciones/${evaluacionId}/enviar/${intentoId}/`;
 
@@ -172,7 +175,9 @@ export async function enviarEvaluacion(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
+        Authorization: authToken.startsWith("Bearer ")
+          ? authToken
+          : `Bearer ${authToken}`,
       },
       body: JSON.stringify({ respuestas }),
     });
@@ -183,7 +188,7 @@ export async function enviarEvaluacion(
       }
       const errorData = await response.json();
       throw new Error(
-        errorData.detail || `Error al enviar la evaluación: ${response.status}`
+        errorData.detail || `Error al enviar la evaluación: ${response.status}`,
       );
     }
 
@@ -210,13 +215,13 @@ export async function obtenerIntento(evaluacionId, token) {
             : `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
       if (response.status === 401) {
         throw new Error(
-          "Sesión expirada o inválida. Por favor, inicia sesión nuevamente."
+          "Sesión expirada o inválida. Por favor, inicia sesión nuevamente.",
         );
       }
       const errorData = await response.json();
@@ -234,7 +239,7 @@ export async function guardarProgreso(
   intentoId,
   respuestas,
   tiempoRestante,
-  authToken
+  authToken,
 ) {
   try {
     const response = await fetch(
@@ -242,14 +247,16 @@ export async function guardarProgreso(
       {
         method: "POST",
         headers: {
-          Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
+          Authorization: authToken.startsWith("Bearer ")
+            ? authToken
+            : `Bearer ${authToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           respuestas: respuestas,
           tiempo_restante: tiempoRestante,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -257,7 +264,10 @@ export async function guardarProgreso(
         throw new Error("Sesión expirada. Por favor, vuelve a iniciar sesión.");
       }
       const errorData = await response.json();
-      throw new Error("Error al guardar respuestas temporales: " + (errorData.detail || response.status));
+      throw new Error(
+        "Error al guardar respuestas temporales: " +
+          (errorData.detail || response.status),
+      );
     }
 
     return await response.json();
@@ -318,7 +328,9 @@ export async function uploadImage(imageFile, authToken) {
   const response = await fetch(`${API_URL}upload_image/`, {
     method: "POST",
     headers: {
-      Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
+      Authorization: authToken.startsWith("Bearer ")
+        ? authToken
+        : `Bearer ${authToken}`,
     },
     body: formData,
   });
@@ -343,13 +355,13 @@ export async function getEvaluacionesPendientes(userId, token) {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.detail || "Error al obtener evaluaciones pendientes"
+        errorData.detail || "Error al obtener evaluaciones pendientes",
       );
     }
 
@@ -371,7 +383,7 @@ export async function iniciarNuevoIntento(evaluacionId, token) {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -390,7 +402,7 @@ export async function finalizarIntento(
   evaluacionId,
   intentoId,
   respuestas,
-  token
+  token,
 ) {
   try {
     const response = await fetch(
@@ -404,13 +416,13 @@ export async function finalizarIntento(
         body: JSON.stringify({
           respuestas: respuestas,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        errorData.detail || `Error al enviar la evaluación: ${response.status}`
+        errorData.detail || `Error al enviar la evaluación: ${response.status}`,
       );
     }
 
@@ -434,10 +446,12 @@ export async function sincronizarTiempo(intentoId, tiempoRestante, authToken) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authToken.startsWith("Bearer ") ? authToken : `Bearer ${authToken}`,
+          Authorization: authToken.startsWith("Bearer ")
+            ? authToken
+            : `Bearer ${authToken}`,
         },
         body: JSON.stringify({ tiempo_restante: tiempoRestante }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -448,7 +462,7 @@ export async function sincronizarTiempo(intentoId, tiempoRestante, authToken) {
       const errorData = await response.json();
       throw new Error(
         errorData.detail ||
-          `Error al sincronizar el tiempo: ${response.status}`
+          `Error al sincronizar el tiempo: ${response.status}`,
       );
     }
 
@@ -466,15 +480,12 @@ export async function sincronizarTiempo(intentoId, tiempoRestante, authToken) {
   }
 }
 
-
-
-
 export async function reportarPregunta(
   preguntaId,
   intentoId,
   descripcion,
   motivo,
-  authToken
+  authToken,
 ) {
   try {
     const response = await fetch(
@@ -486,7 +497,7 @@ export async function reportarPregunta(
           Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ intento_id: intentoId, descripcion, motivo }),
-      }
+      },
     );
     createToast("Problema reportado. Gracias por tu feedback.", "success");
   } catch (error) {
@@ -495,77 +506,67 @@ export async function reportarPregunta(
   }
 }
 
-
-
-
-
-
-
-
 const API_BASE = "http://localhost:8000/api/";
-
 
 // Utilidad para manejar errores de red
 async function handleResponse(response) {
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Error en la petición');
-    }
-    return response.json();
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Error en la petición");
+  }
+  return response.json();
 }
-
-
 
 export async function iniciarIntento(evaluacionId, token) {
-    const response = await fetch(`${API_BASE}evaluaciones/${evaluacionId}/intento-actual/`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-    });
-    return handleResponse(response);
+  const response = await fetch(
+    `${API_BASE}evaluaciones/${evaluacionId}/intento-actual/`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+  return handleResponse(response);
 }
-
-
 
 export async function guardarRespuestas(intentoId, respuestas, token) {
-    const response = await fetch(`${API_BASE}/intentos/${intentoId}/guardar/`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ respuestas })
-    });
-    return handleResponse(response);
+  const response = await fetch(`${API_BASE}/intentos/${intentoId}/guardar/`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ respuestas }),
+  });
+  return handleResponse(response);
 }
 
-
 // Control de retención de datos
-const CACHE_KEY_PREFIX = 'evaluacion_';
+const CACHE_KEY_PREFIX = "evaluacion_";
 
 export function guardarProgresoLocal(evaluacionId, datos) {
-    try {
-        localStorage.setItem(
-            `${CACHE_KEY_PREFIX}${evaluacionId}`,
-            JSON.stringify(datos)
-        );
-    } catch (error) {
-        console.error('Error guardando progreso local:', error);
-    }
+  try {
+    localStorage.setItem(
+      `${CACHE_KEY_PREFIX}${evaluacionId}`,
+      JSON.stringify(datos),
+    );
+  } catch (error) {
+    console.error("Error guardando progreso local:", error);
+  }
 }
 
 export function obtenerProgresoLocal(evaluacionId) {
-    try {
-        const datos = localStorage.getItem(`${CACHE_KEY_PREFIX}${evaluacionId}`);
-        return datos ? JSON.parse(datos) : null;
-    } catch (error) {
-        console.error('Error leyendo progreso local:', error);
-        return null;
-    }
+  try {
+    const datos = localStorage.getItem(`${CACHE_KEY_PREFIX}${evaluacionId}`);
+    return datos ? JSON.parse(datos) : null;
+  } catch (error) {
+    console.error("Error leyendo progreso local:", error);
+    return null;
+  }
 }
 
 export function limpiarProgresoLocal(evaluacionId) {
-    localStorage.removeItem(`${CACHE_KEY_PREFIX}${evaluacionId}`);
+  localStorage.removeItem(`${CACHE_KEY_PREFIX}${evaluacionId}`);
 }

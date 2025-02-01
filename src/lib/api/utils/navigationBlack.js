@@ -1,4 +1,4 @@
-import { beforeNavigate } from '$app/navigation';
+import { beforeNavigate } from "$app/navigation";
 
 export function navigateBlock(condition, message) {
   beforeNavigate(({ cancel }) => {
